@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>사업계획서 데이터 시각화 도우미</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--brand:#2563eb;--brand2:#1d4ed8;--soft:#eff6ff;--good:#16a34a;--warn:#f59e0b;--bad:#dc2626;--radius:20px}
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 36px}.hero{padding:8px 2px 16px}.badge{display:inline-flex;gap:7px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:13px;color:#374151;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+    h1{font-size:28px;line-height:1.18;margin:14px 0 8px;letter-spacing:-.04em}p{margin:0;color:var(--muted);line-height:1.55}.grid{display:grid;gap:14px}.two{grid-template-columns:1fr}@media(min-width:860px){.two{grid-template-columns:360px 1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.card .hd{padding:15px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}.card .bd{padding:16px}.hd h2{font-size:17px;margin:0}.small{font-size:12px;color:var(--muted)}
+    label{display:block;margin:0 0 12px;font-weight:700;font-size:13px}input,textarea,select{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px 12px;font-size:16px;color:var(--ink);outline:none}textarea{min-height:118px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.5}.help{font-size:12px;color:var(--muted);font-weight:500;margin-top:5px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    button{border:0;border-radius:15px;padding:13px 12px;font-weight:800;font-size:15px;cursor:pointer}.primary{background:var(--brand);color:#fff}.primary:active{background:var(--brand2)}.ghost{background:#f3f4f6;color:#111827}.outline{background:#fff;border:1px solid var(--line);color:#111827}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tab{font-size:13px;padding:11px 8px;background:#f3f4f6;color:#374151}.tab.active{background:#111827;color:#fff}
+    .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}@media(min-width:720px){.kpis{grid-template-columns:repeat(4,1fr)}}.kpi{border:1px solid var(--line);border-radius:18px;padding:13px;background:linear-gradient(180deg,#fff,#f9fafb)}.kpi .name{font-size:12px;color:var(--muted);font-weight:700}.kpi .val{font-size:22px;font-weight:900;margin-top:4px;letter-spacing:-.03em}.kpi .memo{font-size:11px;color:var(--muted);margin-top:4px}
+    .chartbox{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;margin-top:12px}.chartbox h3{margin:0 0 8px;font-size:15px}.canvasWrap{height:260px}.insight{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:18px;padding:13px;font-size:14px;color:#334155;line-height:1.55;margin-top:12px}.heatmap{display:grid;gap:6px}.heatrow{display:grid;grid-template-columns:74px repeat(5,1fr);gap:6px;align-items:center}.heatcell{height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#0f172a}.heatlabel{font-size:12px;color:#475569;font-weight:800}.map{height:320px;background:#eef2ff;border-radius:18px;position:relative;overflow:hidden;border:1px solid var(--line)}.map svg{width:100%;height:100%}.bubble{position:absolute;transform:translate(-50%,-50%);border-radius:999px;background:rgba(37,99,235,.72);border:2px solid rgba(255,255,255,.95);box-shadow:0 8px 16px rgba(37,99,235,.25);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:900}.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#64748b}.sw{width:12px;height:12px;border-radius:3px;display:inline-block;background:#2563eb}.foot{font-size:11px;color:#94a3b8;text-align:center;margin-top:14px}.hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="badge">📊 사업계획서 데이터 시각화 도우미</div>
+      <h1>숫자만 넣으면<br>제안서용 그래프가 바로 생성됩니다</h1>
+      <p>성과지표, 지역별 수요, 참여자 흐름, 월별 추이를 입력해 KPI 대시보드·막대그래프·꺾은선그래프·퍼널차트·히트맵·지도형 그래프를 만드세요.</p>
+    </section>
+
+    <div class="grid two">
+      <section class="card">
+        <div class="hd"><h2>입력하기</h2><span class="small">모바일 최적화</span></div>
+        <div class="bd">
+          <label>사업명
+            <input id="projectName" value="취약계층 통합돌봄 지원사업" />
+          </label>
+          <div class="row">
+            <label>목표 인원
+              <input id="target" type="number" value="120" />
+            </label>
+            <label>현재 참여
+              <input id="current" type="number" value="86" />
+            </label>
+          </div>
+          <div class="row">
+            <label>예산(만원)
+              <input id="budget" type="number" value="3500" />
+            </label>
+            <label>만족도(점)
+              <input id="satisfaction" type="number" value="4.6" step="0.1" />
+            </label>
+          </div>
+
+          <label>월별 데이터
+            <textarea id="monthly">1월,12
+2월,18
+3월,24
+4월,31
+5월,42
+6월,55</textarea>
+            <div class="help">형식: 월,값</div>
+          </label>
+
+          <label>지역별 데이터
+            <textarea id="region">중앙동,32
+서부동,21
+동부동,18
+남부동,25
+북부동,14</textarea>
+            <div class="help">형식: 지역,값 · 지도형 그래프와 막대그래프에 사용</div>
+          </label>
+
+          <label>퍼널 데이터
+            <textarea id="funnel">홍보 도달,500
+상담 문의,180
+초기 상담,120
+서비스 신청,86
+지속 참여,64</textarea>
+            <div class="help">형식: 단계,값</div>
+          </label>
+
+          <label>히트맵 데이터
+            <textarea id="heat">월,방문상담,전화상담,서비스연계,사후관리,위기대응
+1월,18,22,12,8,3
+2월,21,28,16,11,4
+3월,26,31,19,15,6
+4월,30,35,23,18,7</textarea>
+            <div class="help">첫 줄은 항목명, 다음 줄부터 행 데이터</div>
+          </label>
+
+          <div class="actions">
+            <button class="primary" onclick="renderAll()">그래프 생성</button>
+            <button class="ghost" onclick="loadSample()">예시 불러오기</button>
+            <button class="outline" onclick="copyInsight()">해석 복사</button>
+            <button class="outline" onclick="downloadImage()">이미지 저장</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="capture" class="card">
+        <div class="hd"><h2 id="titleOut">시각화 결과</h2><span class="small">사업계획서 붙여넣기용</span></div>
+        <div class="bd">
+          <div class="kpis">
+            <div class="kpi"><div class="name">목표 달성률</div><div id="kpiRate" class="val">-</div><div class="memo">현재/목표</div></div>
+            <div class="kpi"><div class="name">참여 인원</div><div id="kpiPeople" class="val">-</div><div class="memo">누적 기준</div></div>
+            <div class="kpi"><div class="name">예산</div><div id="kpiBudget" class="val">-</div><div class="memo">만원</div></div>
+            <div class="kpi"><div class="name">만족도</div><div id="kpiSat" class="val">-</div><div class="memo">5점 만점</div></div>
+          </div>
+
+          <div class="tabs">
+            <button class="tab active" onclick="showTab('basic', this)">기본</button>
+            <button class="tab" onclick="showTab('flow', this)">퍼널/히트맵</button>
+            <button class="tab" onclick="showTab('map', this)">지도형</button>
+          </div>
+
+          <div id="basicPane">
+            <div class="chartbox"><h3>인포그래픽 막대그래프: 지역별 수요</h3><div class="canvasWrap"><canvas id="barChart"></canvas></div></div>
+            <div class="chartbox"><h3>꺾은선그래프: 월별 추이</h3><div class="canvasWrap"><canvas id="lineChart"></canvas></div></div>
+          </div>
+
+          <div id="flowPane" class="hidden">
+            <div class="chartbox"><h3>퍼널차트: 홍보 → 참여 전환 흐름</h3><div class="canvasWrap"><canvas id="funnelChart"></canvas></div></div>
+            <div class="chartbox"><h3>히트맵: 월별 업무 강도</h3><div id="heatmap" class="heatmap"></div></div>
+          </div>
+
+          <div id="mapPane" class="hidden">
+            <div class="chartbox"><h3>지도형 그래프: 지역별 수요 분포</h3><div id="map" class="map"></div><div class="legend"><span><i class="sw"></i> 원이 클수록 수요가 높음</span><span>※ 실제 GIS가 아닌 사업계획서용 도식 지도</span></div></div>
+          </div>
+
+          <div id="insight" class="insight">데이터를 입력한 뒤 그래프 생성을 눌러주세요.</div>
+          <div class="foot">생성된 이미지는 보고서, 발표자료, 사업계획서 초안에 활용할 수 있습니다.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+let charts = {};
+const colors = ['#2563eb','#16a34a','#f59e0b','#dc2626','#7c3aed','#0891b2','#db2777'];
+function parsePairs(text){return text.trim().split(/\n+/).map(x=>x.split(',').map(v=>v.trim())).filter(x=>x.length>=2 && x[0]).map(x=>({label:x[0], value:Number(x[1])||0}));}
+function parseHeat(text){const rows=text.trim().split(/\n+/).map(r=>r.split(',').map(v=>v.trim()));if(rows.length<2)return {headers:[],rows:[]};return {headers:rows[0].slice(1),rows:rows.slice(1).map(r=>({label:r[0], values:r.slice(1).map(v=>Number(v)||0)}))};}
+function destroy(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+function makeChart(id,type,data,options){destroy(id);charts[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='line'},tooltip:{enabled:true}},scales: type==='doughnut'?{}:{y:{beginAtZero:true,grid:{color:'#eef2f7'}},x:{grid:{display:false}}},...options}})}
+function renderAll(){
+ const project=document.getElementById('projectName').value||'사업'; const target=+document.getElementById('target').value||0; const current=+document.getElementById('current').value||0; const budget=+document.getElementById('budget').value||0; const sat=+document.getElementById('satisfaction').value||0;
+ const monthly=parsePairs(document.getElementById('monthly').value); const region=parsePairs(document.getElementById('region').value); const funnel=parsePairs(document.getElementById('funnel').value); const heat=parseHeat(document.getElementById('heat').value);
+ const rate=target?Math.round(current/target*100):0; document.getElementById('titleOut').textContent=project+' 시각화 결과'; document.getElementById('kpiRate').textContent=rate+'%'; document.getElementById('kpiPeople').textContent=current.toLocaleString()+'명'; document.getElementById('kpiBudget').textContent=budget.toLocaleString(); document.getElementById('kpiSat').textContent=sat.toFixed(1);
+ makeChart('barChart','bar',{labels:region.map(x=>x.label),datasets:[{label:'지역별 수요',data:region.map(x=>x.value),backgroundColor:region.map((_,i)=>colors[i%colors.length]),borderRadius:14,borderSkipped:false}]},{plugins:{legend:{display:false}}});
+ makeChart('lineChart','line',{labels:monthly.map(x=>x.label),datasets:[{label:'월별 추이',data:monthly.map(x=>x.value),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.12)',fill:true,tension:.35,pointRadius:5,pointHoverRadius:7}]},{});
+ const maxF=Math.max(...funnel.map(x=>x.value),1); makeChart('funnelChart','bar',{labels:funnel.map(x=>x.label),datasets:[{label:'전환 수',data:funnel.map(x=>x.value),backgroundColor:funnel.map((_,i)=>colors[i%colors.length]),borderRadius:14,barPercentage:.7}]},{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:maxF*1.1},y:{grid:{display:false}}}});
+ renderHeatmap(heat); renderMap(region);
+ const topRegion=[...region].sort((a,b)=>b.value-a.value)[0]; const last=monthly[monthly.length-1]?.value||0; const first=monthly[0]?.value||0; const trend=last>=first?'증가':'감소'; const conv=funnel.length>1?Math.round((funnel[funnel.length-1].value/funnel[0].value)*100):0;
+ document.getElementById('insight').textContent=`${project}은 현재 목표 대비 ${rate}%를 달성했습니다. 월별 추이는 초기 ${first}에서 최근 ${last}로 ${trend}하고 있으며, 지역별로는 ${topRegion?topRegion.label:'주요 지역'}의 수요가 가장 높습니다. 퍼널 기준 최종 전환율은 약 ${conv}%로, 사업계획서에는 고수요 지역 집중 지원과 중간 이탈 구간 보완 전략을 함께 제시하는 것이 좋습니다.`;
+}
+function renderHeatmap(data){const box=document.getElementById('heatmap');box.innerHTML=''; if(!data.headers.length)return; const max=Math.max(...data.rows.flatMap(r=>r.values),1); const head=document.createElement('div');head.className='heatrow';head.innerHTML='<div></div>'+data.headers.map(h=>`<div class="heatlabel">${h}</div>`).join('');box.appendChild(head); data.rows.forEach(r=>{const row=document.createElement('div');row.className='heatrow';row.innerHTML=`<div class="heatlabel">${r.label}</div>`+r.values.map(v=>{const a=.12+(v/max)*.78;return `<div class="heatcell" style="background:rgba(37,99,235,${a})">${v}</div>`}).join('');box.appendChild(row);});}
+function renderMap(region){const map=document.getElementById('map');map.innerHTML='<svg viewBox="0 0 500 320" preserveAspectRatio="none"><path d="M95 58 C160 18 251 24 323 53 C410 87 445 157 414 229 C384 297 274 306 191 285 C96 261 51 203 69 129 C75 100 73 74 95 58Z" fill="#dbeafe" stroke="#bfdbfe" stroke-width="4"/><path d="M149 95 C212 70 284 75 341 112" stroke="#bfdbfe" stroke-width="3" fill="none"/><path d="M129 202 C217 178 298 190 375 231" stroke="#bfdbfe" stroke-width="3" fill="none"/><path d="M243 61 C223 133 228 211 249 294" stroke="#bfdbfe" stroke-width="3" fill="none"/></svg>'; const pos=[[35,30],[63,37],[45,58],[68,68],[30,70],[52,45],[57,82]]; const max=Math.max(...region.map(r=>r.value),1); region.forEach((r,i)=>{const b=document.createElement('div');b.className='bubble';const size=34+(r.value/max)*48;b.style.width=size+'px';b.style.height=size+'px';b.style.left=pos[i%pos.length][0]+'%';b.style.top=pos[i%pos.length][1]+'%';b.innerHTML=`${r.label}<br>${r.value}`;map.appendChild(b);});}
+function showTab(id,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');['basic','flow','map'].forEach(p=>document.getElementById(p+'Pane').classList.toggle('hidden',p!==id));}
+function copyInsight(){navigator.clipboard.writeText(document.getElementById('insight').textContent).then(()=>alert('해석 문장이 복사되었습니다.'));}
+function downloadImage(){html2canvas(document.getElementById('capture'),{scale:2,backgroundColor:'#ffffff'}).then(canvas=>{const a=document.createElement('a');a.download='사업계획서_시각화.png';a.href=canvas.toDataURL('image/png');a.click();});}
+function loadSample(){document.getElementById('projectName').value='고립위기가구 발굴 및 통합지원사업';document.getElementById('target').value=150;document.getElementById('current').value=102;document.getElementById('budget').value=4200;document.getElementById('satisfaction').value=4.7;document.getElementById('monthly').value='1월,15\n2월,24\n3월,33\n4월,47\n5월,68\n6월,81';document.getElementById('region').value='중앙동,38\n서부동,27\n동부동,22\n남부동,31\n북부동,19';document.getElementById('funnel').value='홍보 도달,700\n상담 문의,260\n초기 상담,170\n서비스 신청,102\n지속 참여,78';document.getElementById('heat').value='월,방문상담,전화상담,서비스연계,사후관리,위기대응\n1월,20,25,15,9,4\n2월,24,32,20,13,5\n3월,31,40,27,18,8\n4월,37,46,34,24,10';renderAll();}
+window.addEventListener('load',renderAll);
+</script>
+</body>
+</html>
