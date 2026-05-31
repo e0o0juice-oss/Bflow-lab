@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>대상자 안내 문자 생성기 V4</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --ink:#182033; --muted:#6b7280;
+      --line:#e5e7eb; --primary:#2563eb; --primary-dark:#1d4ed8;
+      --soft:#eff6ff; --ok:#16a34a; --danger:#ef4444;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",Segoe UI,sans-serif;
+      background:linear-gradient(180deg,#eef4ff 0%,var(--bg) 220px);
+      color:var(--ink);
+    }
+    .wrap{max-width:560px;margin:0 auto;padding:18px 14px 40px}
+    .hero{padding:12px 4px 10px}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:13px;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+    h1{margin:13px 0 7px;font-size:27px;line-height:1.18;letter-spacing:-.04em}
+    .sub{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 24px rgba(15,23,42,.06);padding:15px;margin-top:13px}
+    .section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;margin:2px 0 12px;font-size:16px}
+    .small{font-size:12px;color:var(--muted);font-weight:500}
+    label{display:block;margin:11px 0}
+    .label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+    input,select,textarea{
+      width:100%;border:1px solid var(--line);border-radius:14px;padding:13px 12px;font-size:16px;background:#fff;color:var(--ink);
+      outline:none;
+    }
+    textarea{min-height:84px;resize:vertical;line-height:1.5}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .tone-group{margin-top:12px}
+    .tone-heading{font-size:13px;font-weight:800;color:#374151;margin:12px 0 8px}
+    .tones{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .tone{
+      border:1px solid var(--line);background:#fff;border-radius:16px;padding:11px 10px;text-align:left;
+      min-height:70px;transition:.15s;position:relative;
+    }
+    .tone strong{display:block;font-size:14px;margin-bottom:4px}
+    .tone span{display:block;font-size:12px;color:var(--muted);line-height:1.35}
+    .tone.selected{border-color:var(--primary);background:var(--soft);box-shadow:0 0 0 2px rgba(37,99,235,.14)}
+    .tone.selected:after{
+      content:"✓";position:absolute;right:10px;top:8px;background:var(--primary);color:#fff;border-radius:999px;
+      width:22px;height:22px;text-align:center;line-height:22px;font-weight:900;font-size:13px;
+    }
+    .count{font-size:12px;padding:5px 9px;border-radius:999px;background:#f3f4f6;color:#374151}
+    .count.full{background:#fee2e2;color:#b91c1c}
+    .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+    .chip{border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:700}
+    .option-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .option{
+      border:1px solid var(--line);border-radius:15px;background:#fff;padding:12px;text-align:center;font-weight:800;font-size:15px;
+    }
+    .option.active{border-color:var(--primary);background:var(--soft);color:#1d4ed8}
+    .preview{
+      white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:15px;
+      font-size:15.5px;line-height:1.62;min-height:210px;
+    }
+    .buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+    button{font-family:inherit;cursor:pointer}
+    .btn{
+      border:0;border-radius:15px;padding:14px 12px;font-size:15px;font-weight:900;background:var(--primary);color:#fff;
+    }
+    .btn.secondary{background:#fff;color:#111827;border:1px solid var(--line)}
+    .btn.green{background:var(--ok)}
+    .btn:active,.tone:active,.option:active{transform:scale(.99)}
+    .notice{font-size:12px;color:var(--muted);text-align:center;line-height:1.5;margin:16px 0 0}
+    .toast{
+      position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+      background:#111827;color:#fff;padding:11px 14px;border-radius:999px;font-size:14px;font-weight:800;
+      opacity:0;pointer-events:none;transition:.2s;
+    }
+    .toast.show{opacity:1;bottom:32px}
+    .helper{font-size:12px;color:var(--muted);line-height:1.45;margin-top:7px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="badge">💬 통합사례관리 문자 도우미</div>
+      <h1>대상자 안내 문자를<br>원하는 분위기로 조합하세요</h1>
+      <p class="sub">안내 내용을 입력하고 분위기 톤을 최대 4개까지 선택하면 문자 초안이 바로 생성됩니다.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-title">1. 안내 정보 입력</div>
+
+      <label>
+        <span class="label">대상자 이름</span>
+        <input id="name" placeholder="예: 김OO" />
+      </label>
+
+      <label>
+        <span class="label">안내 목적</span>
+        <select id="purpose">
+          <option>방문 일정 안내</option>
+          <option>상담 일정 안내</option>
+          <option>전화 상담 안내</option>
+          <option>서류 제출 안내</option>
+          <option>서비스 신청 안내</option>
+          <option>프로그램 참여 안내</option>
+          <option>교육 안내</option>
+          <option>직접 입력</option>
+        </select>
+      </label>
+
+      <label id="customPurposeBox" style="display:none">
+        <span class="label">안내 목적 직접 입력</span>
+        <input id="customPurpose" placeholder="예: 긴급 생계비 신청 안내" />
+      </label>
+
+      <div class="grid2">
+        <label>
+          <span class="label">일자</span>
+          <input id="date" type="date" />
+        </label>
+        <label>
+          <span class="label">시간</span>
+          <input id="time" type="time" />
+        </label>
+      </div>
+
+      <label>
+        <span class="label">장소</span>
+        <input id="place" placeholder="예: 주민센터 2층 상담실" />
+      </label>
+
+      <label>
+        <span class="label">준비사항</span>
+        <input id="prep" placeholder="예: 신분증, 통장 사본" />
+      </label>
+
+      <div class="grid2">
+        <label>
+          <span class="label">담당자</span>
+          <input id="staff" placeholder="예: 이은주 사례관리사" />
+        </label>
+        <label>
+          <span class="label">연락처</span>
+          <input id="phone" placeholder="예: 010-0000-0000" />
+        </label>
+      </div>
+
+      <label>
+        <span class="label">추가 안내</span>
+        <textarea id="note" placeholder="예: 일정 변경이 필요하시면 미리 연락 부탁드립니다."></textarea>
+      </label>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <span>2. 분위기 톤 선택</span>
+        <span id="toneCount" class="count">0 / 4개 선택</span>
+      </div>
+      <div class="helper">최대 4개까지 중복 조합할 수 있어요. 예: 따뜻한 + 정중한 + 간결한</div>
+
+      <div class="tone-group">
+        <div class="tone-heading">감성형</div>
+        <div class="tones" id="emotionalTones"></div>
+      </div>
+
+      <div class="tone-group">
+        <div class="tone-heading">업무형</div>
+        <div class="tones" id="workTones"></div>
+      </div>
+
+      <div class="chips" id="selectedChips"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">3. 이모티콘 사용 여부</div>
+      <div class="option-row">
+        <button class="option active" data-emoji="yes">😊 사용</button>
+        <button class="option" data-emoji="no">🚫 사용 안함</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">4. 생성된 문자</div>
+      <div id="preview" class="preview"></div>
+      <div class="buttons">
+        <button class="btn" id="copyBtn">문자 복사</button>
+        <button class="btn secondary" id="smsBtn">문자앱 열기</button>
+        <button class="btn green" id="shareBtn">공유하기</button>
+        <button class="btn secondary" id="resetBtn">초기화</button>
+      </div>
+    </section>
+
+    <p class="notice">입력한 개인정보는 저장되지 않습니다. 이 파일은 휴대폰 브라우저에서만 작동하는 단일 HTML 웹앱입니다.</p>
+  </main>
+
+  <div class="toast" id="toast">복사되었습니다</div>
+
+  <script>
+    const emotional = [
+      {id:"warm", label:"💙 따뜻한", desc:"안심, 배려, 다정함"},
+      {id:"bright", label:"☀️ 밝은", desc:"긍정적, 참여 독려"},
+      {id:"friendly", label:"👥 친근한", desc:"가까운 대화체"},
+      {id:"polished", label:"💎 세련된", desc:"정돈된 표현"},
+      {id:"strong", label:"⚡ 강렬한", desc:"중요성 강조"},
+      {id:"natural", label:"🍃 자연스러운", desc:"부담 없는 흐름"},
+      {id:"creative", label:"💡 창의적", desc:"색다른 표현"},
+      {id:"sns", label:"👍 SNS형", desc:"짧고 눈에 띄게"}
+    ];
+
+    const work = [
+      {id:"official", label:"🛡 공식적", desc:"기관 안내문 느낌"},
+      {id:"polite", label:"🤝 정중한", desc:"예의 있고 신중함"},
+      {id:"concise", label:"✅ 간결한", desc:"핵심만 짧게"},
+      {id:"clear", label:"🎯 명확한", desc:"일정·장소 강조"},
+      {id:"analytic", label:"📊 분석적", desc:"근거와 구조 중심"},
+      {id:"report", label:"📄 보고서형", desc:"문서형 표현"},
+      {id:"promo", label:"📣 홍보형", desc:"참여 유도"},
+      {id:"practical", label:"💼 실무형", desc:"서류·절차 안내"}
+    ];
+
+    const selected = new Set();
+    let emoji = true;
+
+    const els = {
+      name: document.getElementById("name"),
+      purpose: document.getElementById("purpose"),
+      customPurpose: document.getElementById("customPurpose"),
+      customPurposeBox: document.getElementById("customPurposeBox"),
+      date: document.getElementById("date"),
+      time: document.getElementById("time"),
+      place: document.getElementById("place"),
+      prep: document.getElementById("prep"),
+      staff: document.getElementById("staff"),
+      phone: document.getElementById("phone"),
+      note: document.getElementById("note"),
+      preview: document.getElementById("preview"),
+      toneCount: document.getElementById("toneCount"),
+      chips: document.getElementById("selectedChips"),
+      toast: document.getElementById("toast")
+    };
+
+    function renderTones(list, rootId){
+      const root = document.getElementById(rootId);
+      root.innerHTML = "";
+      list.forEach(t => {
+        const btn = document.createElement("button");
+        btn.className = "tone";
+        btn.dataset.id = t.id;
+        btn.innerHTML = `<strong>${t.label}</strong><span>${t.desc}</span>`;
+        btn.addEventListener("click", () => toggleTone(t.id));
+        root.appendChild(btn);
+      });
+    }
+
+    function toggleTone(id){
+      if(selected.has(id)){
+        selected.delete(id);
+      } else {
+        if(selected.size >= 4){
+          showToast("최대 4개까지 선택할 수 있어요");
+          return;
+        }
+        selected.add(id);
+      }
+      renderSelected();
+      update();
+    }
+
+    function getToneById(id){
+      return emotional.concat(work).find(t => t.id === id);
+    }
+
+    function renderSelected(){
+      document.querySelectorAll(".tone").forEach(btn => {
+        btn.classList.toggle("selected", selected.has(btn.dataset.id));
+      });
+
+      els.toneCount.textContent = `${selected.size} / 4개 선택`;
+      els.toneCount.classList.toggle("full", selected.size >= 4);
+
+      els.chips.innerHTML = "";
+      [...selected].forEach(id => {
+        const t = getToneById(id);
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = t ? t.label : id;
+        els.chips.appendChild(chip);
+      });
+    }
+
+    function formatDate(date){
+      if(!date) return "";
+      const d = new Date(date + "T00:00:00");
+      const days = ["일","월","화","수","목","금","토"];
+      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}(${days[d.getDay()]})`;
+    }
+
+    function formatTime(time){
+      if(!time) return "";
+      const [h,m] = time.split(":").map(Number);
+      const ampm = h < 12 ? "오전" : "오후";
+      const hh = h % 12 || 12;
+      return `${ampm} ${hh}:${String(m).padStart(2,"0")}`;
+    }
+
+
+    function purposeIntro(purpose){
+      const map = {
+        "방문 일정 안내": "방문 일정이 예정되어 있어 안내드립니다.",
+        "상담 일정 안내": "상담 일정 안내드립니다.",
+        "전화 상담 안내": "전화 상담이 예정되어 있어 안내드립니다.",
+        "서류 제출 안내": "서류 제출 관련 안내드립니다.",
+        "서비스 신청 안내": "서비스 신청 절차를 안내드립니다.",
+        "프로그램 참여 안내": "프로그램 참여 관련 안내드립니다.",
+        "교육 안내": "교육 일정 안내드립니다."
+      };
+      return map[purpose] || `${purpose} 관련하여 안내드립니다.`;
+    }
+
+    function finalPurpose(){
+      return els.purpose.value === "직접 입력" ? (els.customPurpose.value.trim() || "안내") : els.purpose.value;
+    }
+
+    function has(id){ return selected.has(id); }
+    function e(symbol){ return emoji ? symbol : ""; }
+
+    function buildMessage(){
+      const name = els.name.value.trim() ? `${els.name.value.trim()}님` : "대상자님";
+      const purpose = finalPurpose();
+      const dateText = formatDate(els.date.value);
+      const timeText = formatTime(els.time.value);
+      const dateTime = [dateText, timeText].filter(Boolean).join(" ");
+      const place = els.place.value.trim();
+      const prep = els.prep.value.trim();
+      const staff = els.staff.value.trim();
+      const phone = els.phone.value.trim();
+      const note = els.note.value.trim();
+
+      const toneEmpty = selected.size === 0;
+      const official = has("official") || has("report") || has("analytic");
+      const polite = has("polite") || official;
+      const concise = has("concise") || has("sns");
+      const clear = has("clear") || has("practical") || has("strong");
+      const warm = has("warm") || has("natural");
+      const friendly = has("friendly") || has("bright");
+      const promo = has("promo") || has("creative");
+
+      const lines = [];
+
+      if(concise){
+        lines.push(`${name}, ${purpose}드립니다${emoji && friendly ? " 😊" : "."}`);
+        if(dateTime) lines.push(`${e("📅 ")}일시: ${dateTime}`);
+        if(place) lines.push(`${e("📍 ")}장소: ${place}`);
+        if(prep) lines.push(`${e("✅ ")}준비: ${prep}`);
+        if(note) lines.push(note);
+        if(phone) lines.push(`${e("☎️ ")}문의: ${phone}`);
+        return lines.join("\n");
+      }
+
+      if(official){
+        lines.push(`[${purpose}]`);
+        lines.push(`${name}, 안녕하십니까.`);
+        lines.push(`${purpose}와 관련하여 아래와 같이 안내드립니다.`);
+        if(dateTime) lines.push(`- 일시: ${dateTime}`);
+        if(place) lines.push(`- 장소: ${place}`);
+        if(prep) lines.push(`- 준비사항: ${prep}`);
+        if(note) lines.push(`- 참고사항: ${note}`);
+        lines.push(clear ? "일정 및 준비사항을 확인하시어 참석 부탁드립니다." : "확인 후 참석 부탁드립니다.");
+        if(staff || phone) lines.push(`${staff || "담당자"}${phone ? " / " + phone : ""}`);
+        return lines.join("\n");
+      }
+
+      if(promo){
+        lines.push(`${name}, 안녕하세요${emoji ? " 😊" : "."}`);
+        lines.push(purposeIntro(purpose));
+        if(dateTime) lines.push(`${e("📅 ")}일시: ${dateTime}`);
+        if(place) lines.push(`${e("📍 ")}장소: ${place}`);
+        if(prep) lines.push(`${e("🎒 ")}준비사항: ${prep}`);
+        if(note) lines.push(note);
+        lines.push(`편하게 확인해 주시고 많은 참여 부탁드립니다${emoji ? "!" : "."}`);
+        if(staff || phone) lines.push(`${staff || "담당자"}${phone ? " / " + phone : ""}`);
+        return lines.join("\n");
+      }
+
+      if(warm || friendly || toneEmpty){
+        lines.push(`${name}, 안녕하세요${emoji && friendly ? " 😊" : "."}`);
+        if(warm) lines.push("편안히 확인하실 수 있도록 안내드립니다.");
+        else lines.push(purposeIntro(purpose));
+        if(dateTime) lines.push(`${e("📅 ")}일시는 ${dateTime}입니다.`);
+        if(place) lines.push(`${e("📍 ")}장소는 ${place}입니다.`);
+        if(prep) lines.push(`${e("✅ ")}준비하실 내용은 ${prep}입니다.`);
+        if(note) lines.push(note);
+        lines.push(warm ? "어려운 점이 있으시면 편하게 말씀해 주세요." : "궁금한 점이 있으시면 연락 주세요.");
+        if(staff || phone) lines.push(`${staff || "담당자"} 드림${phone ? " / " + phone : ""}`);
+        return lines.join("\n");
+      }
+
+      lines.push(`${name}, 안녕하세요.`);
+      lines.push(purposeIntro(purpose));
+      if(dateTime) lines.push(`일시: ${dateTime}`);
+      if(place) lines.push(`장소: ${place}`);
+      if(prep) lines.push(`준비사항: ${prep}`);
+      if(note) lines.push(note);
+      lines.push("확인 부탁드립니다.");
+      if(staff || phone) lines.push(`${staff || "담당자"}${phone ? " / " + phone : ""}`);
+      return lines.join("\n");
+    }
+
+    function update(){
+      els.customPurposeBox.style.display = els.purpose.value === "직접 입력" ? "block" : "none";
+      els.preview.textContent = buildMessage();
+    }
+
+    function showToast(text){
+      els.toast.textContent = text;
+      els.toast.classList.add("show");
+      setTimeout(() => els.toast.classList.remove("show"), 1500);
+    }
+
+    document.querySelectorAll("input,select,textarea").forEach(el => el.addEventListener("input", update));
+    document.querySelectorAll("[data-emoji]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        emoji = btn.dataset.emoji === "yes";
+        document.querySelectorAll("[data-emoji]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        update();
+      });
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(buildMessage());
+      showToast("문자가 복사되었습니다");
+    });
+
+    document.getElementById("smsBtn").addEventListener("click", () => {
+      const body = encodeURIComponent(buildMessage());
+      location.href = `sms:?&body=${body}`;
+    });
+
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const text = buildMessage();
+      if(navigator.share){
+        await navigator.share({ text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        showToast("공유 기능 대신 복사했습니다");
+      }
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      document.querySelectorAll("input,textarea").forEach(el => el.value = "");
+      els.purpose.value = "방문 일정 안내";
+      selected.clear();
+      emoji = true;
+      document.querySelectorAll("[data-emoji]").forEach(b => b.classList.toggle("active", b.dataset.emoji === "yes"));
+      renderSelected();
+      update();
+    });
+
+    renderTones(emotional, "emotionalTones");
+    renderTones(work, "workTones");
+    renderSelected();
+    update();
+  </script>
+</body>
+</html>
