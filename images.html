@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>보고서 데이터 시각화 AI 프롬프트 도우미</title>
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--ink:#182033;--muted:#667085;--line:#e5e7eb;--primary:#2563eb;--soft:#eff6ff;--accent:#0f766e;--warn:#f97316;--radius:20px;}
+    *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,"Noto Sans KR",Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5} .wrap{max-width:760px;margin:0 auto;padding:18px 14px 96px}.hero{background:linear-gradient(135deg,#1d4ed8,#0f766e);color:white;border-radius:26px;padding:24px 20px;margin-bottom:16px;box-shadow:0 14px 40px rgba(29,78,216,.18)}.hero h1{font-size:25px;line-height:1.25;margin:0 0 10px}.hero p{margin:0;color:#eaf2ff;font-size:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:17px;margin:12px 0;box-shadow:0 8px 24px rgba(16,24,40,.05)}.label{font-weight:800;margin:0 0 9px;font-size:16px}.hint{font-size:13px;color:var(--muted);margin:-4px 0 10px}.grid{display:grid;grid-template-columns:1fr;gap:9px}.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}.chip,button,select,textarea,input{font:inherit}.chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:13px 12px;text-align:left;font-weight:700;color:#344054}.chip small{display:block;color:var(--muted);font-weight:500;margin-top:2px}.chip .emoji{font-size:24px;display:block;margin-bottom:5px}.chip .chip-title{display:block;font-size:15px}.chip.vizchip{min-height:86px;text-align:center;padding:12px 8px}.chip.vizchip small{font-size:12px}.chip.active{border-color:var(--primary);background:var(--soft);color:#1744b3}.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}select,input,textarea{width:100%;border:1px solid var(--line);border-radius:15px;background:#fff;padding:13px;color:var(--ink)}textarea{min-height:110px;resize:vertical}.examples{display:grid;gap:8px}.ex{border:1px dashed #bfd3ff;background:#fbfdff;border-radius:16px;padding:12px;font-size:14px;color:#344054;text-align:left;cursor:pointer;width:100%}.ex b{color:#1d4ed8}.ex:active{transform:scale(.99)}.ex small{display:block;color:#667085;margin-top:5px}.btns{position:fixed;left:0;right:0;bottom:0;background:rgba(245,247,251,.92);backdrop-filter:blur(10px);padding:10px 14px 14px;border-top:1px solid var(--line)}.btnrow{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:9px}.btn{border:0;border-radius:16px;padding:14px 10px;font-weight:900;cursor:pointer}.primary{background:var(--primary);color:white}.secondary{background:#e6eefc;color:#173f8a}.copy{background:#111827;color:#fff;width:100%;margin-top:10px}.selectcopy{background:#2563eb;color:#fff;width:100%;margin-top:8px}.preview{background:#fff;border:2px solid #dbeafe;border-radius:18px;padding:14px;margin:8px 0 14px;min-height:220px;overflow:hidden}.preview-title{font-weight:900;margin:0 0 10px;font-size:16px;color:#1d4ed8}.mock{display:grid;gap:10px}.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpi-box{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#f9fafb}.kpi-num{font-size:24px;font-weight:900}.bar-row{display:grid;grid-template-columns:70px 1fr 44px;gap:8px;align-items:center;font-size:13px}.bar-track{height:18px;background:#eef2ff;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,#60a5fa,#2563eb);border-radius:999px}.line-svg,.pie-svg{width:100%;height:160px;background:#f8fafc;border-radius:14px;border:1px solid #e5e7eb}.flow{display:grid;gap:8px}.flow-step{border:1px solid #dbeafe;background:#eff6ff;border-radius:14px;padding:11px;font-weight:800;text-align:center}.table-mock{width:100%;border-collapse:collapse;font-size:13px}.table-mock th,.table-mock td{border:1px solid #e5e7eb;padding:8px;text-align:left}.table-mock th{background:#f1f5f9}.copy-status{font-size:13px;font-weight:800;color:#067647;margin-top:8px;min-height:20px}.prompt{white-space:pre-wrap;background:#ffffff;color:#101828;border:3px solid #2563eb;border-radius:18px;padding:15px;font-size:15px;line-height:1.65;min-height:260px;max-height:520px;overflow:auto;box-shadow:inset 0 0 0 1px #dbeafe}.promptbox{width:100%;min-height:330px;max-height:560px;border:3px solid #2563eb;border-radius:18px;background:#fff;color:#101828;padding:15px;font-size:15px;line-height:1.65;resize:vertical;box-shadow:inset 0 0 0 1px #dbeafe}.prompt-empty{color:#667085}.result-card{border:2px solid #2563eb;background:#f8fbff}.result-guide{font-size:13px;color:#1d4ed8;background:#eff6ff;border-radius:12px;padding:9px 10px;margin:7px 0 10px;font-weight:700}.pill{display:inline-flex;gap:5px;align-items:center;background:#ecfdf3;color:#067647;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;margin-bottom:8px}.notice{font-size:13px;color:#475467;background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:10px}.hidden{display:none}.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:10px 16px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}.toast.show{opacity:1}@media(min-width:650px){.chips{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr 1fr}.hero h1{font-size:30px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>보고서용 데이터 시각화<br>AI 프롬프트 도우미</h1>
+      <p>공무원 · 통합사례관리사 · 사회복지사가 문서에 바로 넣을 수 있는 시각화 이미지 생성용 프롬프트를 자동 완성합니다.</p><p style="margin-top:10px;font-size:13px;color:#dbeafe">수정본 v6 · 수동복사 모드 추가</p>
+    </section>
+
+    <section class="card">
+      <div class="label">1. 어떤 보고서에 넣을 자료인가요?</div>
+      <div class="hint">선택에 따라 예시와 프롬프트 문장이 달라집니다.</div>
+      <div class="chips" id="docChips"></div>
+    </section>
+
+    <section class="card">
+      <div class="label">2. 어떤 시각화가 필요하신가요? 📊📈🍩➡️</div>
+      <div class="chips" id="vizChips"></div>
+    </section>
+
+    <section class="card">
+      <div class="label">3. 기본 내용을 입력하세요</div>
+      <div class="grid">
+        <div><div class="hint">사업명/대상</div><input id="title" placeholder="예: 독거노인 안부확인 사업" /></div>
+        <div><div class="hint">보고 기간</div><input id="period" placeholder="예: 2026년 1월~5월" /></div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="hint">핵심 데이터</div>
+      <textarea id="data" placeholder="예: 대상자 120명, 상담 280건, 서비스 연계 96건, 위기 감소 32건, 만족도 매우만족 45명/만족 38명/보통 12명/불만족 5명"></textarea>
+      <div class="hint">강조하고 싶은 메시지</div>
+      <textarea id="message" placeholder="예: 상담 건수가 늘었고 서비스 연계율이 높아졌다. 향후 고위험군 집중관리가 필요하다."></textarea>
+    </section>
+
+    <section class="card">
+      <div class="label">4. 쉽게 참고할 예시</div>
+      <div class="examples" id="examples"></div>
+    </section>
+
+    <section class="card result-card" id="resultCard">
+      <span class="pill">복사해서 ChatGPT, Claude, Gemini 등에 붙여넣기</span>
+      <div class="label">시각화 미리보기</div>
+      <div class="result-guide">참여자가 바로 이해할 수 있도록 선택한 유형의 예시 이미지가 먼저 보입니다. 실제 AI에는 아래 “이미지 생성용 프롬프트”를 복사해서 붙여넣으면 됩니다.</div>
+      <div class="preview" id="preview" aria-live="polite"></div>
+      <div class="label">이미지 생성용 프롬프트</div>
+      <div class="result-guide">아래 칸은 직접 선택이 가능한 복사용 입력칸입니다. 자동복사가 막히면 “전체 선택하기”를 누른 뒤 휴대폰 복사 메뉴를 사용하세요.</div>
+      <textarea class="promptbox" id="prompt" aria-live="polite" readonly></textarea>
+      <button class="btn copy" id="copyBtn" type="button">프롬프트 자동 복사하기</button>
+      <button class="btn selectcopy" id="selectBtn" type="button">자동복사가 막히면 전체 선택하기</button>
+      <div class="copy-status" id="copyStatus"></div>
+    </section>
+
+    <section class="notice">
+      개인정보 보호: 주민등록번호, 주소, 전화번호, 실명, 사례대상자 식별정보는 넣지 마세요. “A대상자”, “60대 남성”, “OO동”처럼 비식별화해서 입력하세요.
+    </section>
+  </main>
+  <div class="btns"><div class="btnrow"><button class="btn secondary" onclick="resetForm()">처음부터</button><button class="btn primary" onclick="buildPrompt()">프롬프트 만들기</button></div></div>
+  <div class="toast" id="toast">복사되었습니다</div>
+<script>
+const docs={
+ result:{name:'결과보고서',sub:'성과·변화 정리',examples:['대상자 수, 상담 건수, 서비스 연계 건수를 막대그래프로 정리','사업 전후 변화를 비교표와 핵심 수치 카드로 정리','성과 3가지와 향후 과제 2가지를 인포그래픽으로 구성'],tone:'공공기관 결과보고서에 들어갈 수 있도록 객관적이고 간결하게'},
+ plan:{name:'사업계획서',sub:'필요성·목표 제시',examples:['지역 문제 현황 → 추진 필요성 → 목표를 흐름도로 정리','대상자 규모, 위험요인, 추진전략을 3단 구성 인포그래픽으로 표현','월별 추진일정과 주요 산출물을 간트차트 형태로 정리'],tone:'사업계획서에 어울리게 필요성, 목표, 추진전략이 분명하게'},
+ satisfaction:{name:'만족도 조사',sub:'항목별 응답 분석',examples:['항목별 매우만족/만족/보통/불만족/매우불만족 비율을 누적막대그래프로 정리','전체 만족도 평균과 개선 필요 항목 TOP3를 카드형 대시보드로 정리','응답자 의견을 긍정/중립/개선요청으로 분류해 요약'],tone:'만족도 조사 결과보고서에 넣기 좋게 수치와 해석을 함께'},
+ case:{name:'사례관리 보고',sub:'상담·연계·변화',examples:['초기상담→욕구파악→서비스연계→사후관리 과정을 흐름도로 정리','건강/경제/주거/가족관계 영역별 위험도 변화를 표로 정리','월별 상담건수와 서비스 연계 현황을 대시보드로 구성'],tone:'통합사례관리 기록을 개인정보 없이 요약하고 변화 중심으로'},
+ budget:{name:'예산·실적 보고',sub:'집행률·효율성',examples:['예산액, 집행액, 잔액, 집행률을 한눈에 보이는 KPI 카드로 정리','항목별 예산 집행 비중을 도넛차트로 표현','예산 대비 성과를 표와 간단한 해석으로 정리'],tone:'예산 보고에 맞게 집행률과 성과를 명확하게'},
+ dashboard:{name:'월간 현황판',sub:'업무량·추세 파악',examples:['월별 상담/방문/연계 건수를 선그래프와 KPI 카드로 구성','읍면동별 대상자 현황을 표와 막대그래프로 정리','고위험군, 신규대상자, 종결대상자를 한 화면 대시보드로 정리'],tone:'관리자가 빠르게 파악할 수 있는 대시보드 형태로'}
+};
+
+const exampleDetails={
+ result:[
+  {title:'독거노인 안부확인 사업',period:'2026년 1월~5월',data:'대상자 120명, 안부확인 480건, 상담 135건, 서비스 연계 62건, 고위험군 조기발견 18명',message:'안부확인과 상담을 통해 고위험군을 조기에 발견했고 서비스 연계가 확대되었다.',viz:'bar'},
+  {title:'찾아가는 복지상담 운영 결과',period:'2026년 상반기',data:'사업 전 상담 95건, 사업 후 상담 168건, 서비스 연계율 42%에서 67%로 증가, 미해결 욕구 31건에서 14건으로 감소',message:'사업 전후 비교를 통해 상담 접근성과 서비스 연계 성과를 보여주고 싶다.',viz:'kpi'},
+  {title:'취약계층 지원사업 결과보고',period:'2026년 1분기',data:'긴급지원 35건, 주거지원 18건, 의료지원 22건, 돌봄연계 40건, 향후 과제: 고위험군 지속 모니터링',message:'주요 성과와 향후 과제를 한 장으로 보기 쉽게 정리하고 싶다.',viz:'info'}
+ ],
+ plan:[
+  {title:'중장년 1인가구 고독사 예방사업',period:'2026년 7월~12월',data:'중장년 1인가구 320명, 위험군 추정 58명, 월 1회 안부확인, 고위험군 주 1회 모니터링 예정',message:'지역 문제 현황과 추진 필요성을 설득력 있게 보여주고 싶다.',viz:'flow'},
+  {title:'저소득 아동 방학 중 돌봄지원 사업',period:'2026년 여름방학',data:'대상 아동 80명, 급식지원 주 5회, 학습지원 주 2회, 정서지원 월 2회, 협력기관 4곳',message:'대상자 규모, 추진전략, 기대효과가 잘 드러나야 한다.',viz:'info'},
+  {title:'취약계층 주거환경 개선사업',period:'2026년 연중',data:'대상가구 50가구, 안전점검 50건, 경보장치 설치 30가구, 민관협력 6개 기관',message:'월별 추진일정과 산출물을 보고서에 넣기 좋게 정리하고 싶다.',viz:'table'}
+ ],
+ satisfaction:[
+  {title:'복지상담 서비스 만족도 조사',period:'2026년 5월',data:'응답자 100명, 친절성 매우만족 52명/만족 35명/보통 10명/불만족 3명, 신속성 매우만족 41명/만족 39명/보통 15명/불만족 5명',message:'항목별 만족도 차이를 쉽게 비교하고 개선이 필요한 항목을 찾고 싶다.',viz:'bar'},
+  {title:'돌봄서비스 이용자 만족도 조사',period:'2026년 상반기',data:'전체 만족도 평균 4.4점, 방문시간 만족도 4.1점, 서비스 내용 만족도 4.6점, 재이용 의향 88%',message:'전체 만족도와 개선 필요 항목 TOP3를 한눈에 보여주고 싶다.',viz:'kpi'},
+  {title:'교육 참여자 만족도 조사',period:'2026년 6월',data:'긍정 의견 72건, 중립 의견 18건, 개선요청 10건, 주요 개선요청: 실습시간 확대, 자료 간소화',message:'주관식 의견을 긍정/중립/개선요청으로 분류해 요약하고 싶다.',viz:'pie'}
+ ],
+ case:[
+  {title:'통합사례관리 서비스 연계 과정',period:'2026년 3월~5월',data:'초기상담 45건, 욕구조사 38건, 서비스계획 수립 30건, 민간자원 연계 24건, 사후관리 20건',message:'사례관리 진행 과정을 개인정보 없이 흐름도로 보여주고 싶다.',viz:'flow'},
+  {title:'고위험가구 사례관리 변화 분석',period:'2026년 1월~5월',data:'건강 위험도 높음 20명에서 11명, 경제 위험도 높음 24명에서 15명, 주거 위험도 높음 12명에서 8명으로 감소',message:'영역별 위험도 변화가 객관적으로 보였으면 한다.',viz:'bar'},
+  {title:'월별 사례관리 업무 현황',period:'2026년 1월~5월',data:'1월 상담 30건/연계 12건, 2월 상담 42건/연계 18건, 3월 상담 55건/연계 25건, 4월 상담 48건/연계 21건, 5월 상담 60건/연계 28건',message:'상담과 연계 실적의 월별 흐름을 보여주고 싶다.',viz:'line'}
+ ],
+ budget:[
+  {title:'취약계층 지원사업 예산 집행 현황',period:'2026년 1월~5월',data:'예산액 50,000천원, 집행액 36,500천원, 잔액 13,500천원, 집행률 73%',message:'예산 집행 현황을 핵심 수치 중심으로 보여주고 싶다.',viz:'kpi'},
+  {title:'복지사업 항목별 예산 비중',period:'2026년 상반기',data:'인건비 15,000천원, 프로그램비 20,000천원, 홍보비 3,000천원, 물품구입비 7,000천원, 기타 5,000천원',message:'항목별 예산 비중을 쉽게 이해할 수 있게 표현하고 싶다.',viz:'pie'},
+  {title:'예산 대비 성과 보고',period:'2026년 1분기',data:'집행액 28,000천원, 지원대상 140명, 상담 310건, 서비스연계 96건, 1인당 평균 지원액 200천원',message:'예산과 성과를 함께 정리해 효율성을 보여주고 싶다.',viz:'table'}
+ ],
+ dashboard:[
+  {title:'월간 복지상담 업무 현황판',period:'2026년 1월~5월',data:'1월 80건, 2월 95건, 3월 120건, 4월 110건, 5월 135건, 서비스연계 총 210건',message:'월별 업무량 증가 추세와 핵심 지표를 한 화면에 보여주고 싶다.',viz:'line'},
+  {title:'읍면동별 대상자 현황',period:'2026년 5월 기준',data:'A동 85명, B동 63명, C동 49명, D동 72명, E동 38명, 고위험군 총 44명',message:'지역별 대상자 규모와 고위험군 현황을 비교하고 싶다.',viz:'bar'},
+  {title:'사례관리 월간 대시보드',period:'2026년 5월',data:'신규대상자 28명, 진행중 140명, 종결 18명, 고위험군 32명, 서비스연계 76건',message:'관리자가 빠르게 확인할 수 있는 카드형 대시보드가 필요하다.',viz:'kpi'}
+ ]
+};
+
+const viz={
+ auto:{emoji:'🤖',name:'AI가 추천',sub:'알아서 골라줘요'},
+ bar:{emoji:'📊',name:'막대그래프',sub:'항목 비교'},
+ line:{emoji:'📈',name:'추세그래프',sub:'월별 변화'},
+ pie:{emoji:'🍩',name:'도넛/원형',sub:'비율·비중'},
+ flow:{emoji:'➡️',name:'흐름도',sub:'진행 절차'},
+ kpi:{emoji:'🔢',name:'KPI 카드',sub:'핵심 숫자'},
+ info:{emoji:'🧩',name:'인포그래픽',sub:'한 장 요약'},
+ table:{emoji:'📋',name:'표+해석',sub:'문서용 정리'}
+};
+let selectedDoc='result', selectedViz='auto';
+function renderChips(){
+ document.getElementById('docChips').innerHTML=Object.entries(docs).map(([k,v])=>`<button class="chip ${k===selectedDoc?'active':''}" onclick="selectedDoc='${k}';renderChips();buildPrompt();">${v.name}<small>${v.sub}</small></button>`).join('');
+ document.getElementById('vizChips').innerHTML=Object.entries(viz).map(([k,v])=>`<button class="chip vizchip ${k===selectedViz?'active':''}" onclick="selectedViz='${k}';renderChips();buildPrompt();" aria-label="${v.name} 선택"><span class="emoji">${v.emoji}</span><span class="chip-title">${v.name}</span><small>${v.sub}</small></button>`).join('');
+ document.getElementById('examples').innerHTML=docs[selectedDoc].examples.map((e,i)=>`<button type="button" class="ex" data-example-index="${i}"><b>예시 ${i+1}</b><br>${e}<small>누르면 아래 입력칸과 프롬프트가 자동으로 채워집니다.</small></button>`).join('');
+ document.querySelectorAll('[data-example-index]').forEach(btn=>btn.addEventListener('click',()=>applyExample(Number(btn.dataset.exampleIndex))));
+}
+function applyExample(i){
+ const ex=exampleDetails[selectedDoc][i];
+ document.getElementById('title').value=ex.title;
+ document.getElementById('period').value=ex.period;
+ document.getElementById('data').value=ex.data;
+ document.getElementById('message').value=ex.message;
+ selectedViz=ex.viz;
+ renderChips();
+ buildPrompt();
+ document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+ showToast('예시가 입력되었습니다');
+}
+function val(id, fallback){return document.getElementById(id).value.trim()||fallback}
+function buildPrompt(){
+ const d=docs[selectedDoc], v=viz[selectedViz];
+ const title=val('title','[사업명 또는 대상 입력]'), period=val('period','[보고 기간 입력]'), data=val('data','[핵심 데이터를 쉼표로 입력]'), msg=val('message','[강조하고 싶은 메시지 입력]');
+ const vizLine=selectedViz==='auto'?'입력한 데이터에 가장 적합한 시각화 유형을 2~3개 추천하고, 그중 보고서에 가장 적합한 1안을 만들어주세요.':`${v.name} 중심으로 만들어주세요.`;
+ renderPreview();
+ document.getElementById('prompt').value=`당신은 공공기관 보고서용 데이터 시각화 이미지를 만드는 전문가입니다.\n\n아래 내용을 바탕으로 보고서에 바로 넣을 수 있는 '시각화 이미지'를 만들어주세요.\n텍스트 설명만 하지 말고, 한 장짜리 카드뉴스/인포그래픽/차트 이미지처럼 시각적으로 구성해주세요.\n\n목적: ${d.name}에 넣을 데이터 시각화 이미지 만들기\n대상 업무: 공무원, 통합사례관리사, 사회복지사가 활용할 수 있는 문서용 자료\n표현 방식: ${vizLine}\n작성 톤: ${d.tone}\n\n[기본 정보]\n- 사업명/대상: ${title}\n- 보고 기간: ${period}\n- 핵심 데이터: ${data}\n- 강조 메시지: ${msg}\n\n[이미지 제작 요청]\n1. 보고서에 바로 넣을 수 있는 제목을 상단에 크게 넣어주세요.\n2. 핵심 수치가 눈에 먼저 들어오도록 차트, 표, KPI 카드, 아이콘을 조합해주세요.\n3. 선택한 시각화 유형에 맞게 실제 이미지 형태로 구성해주세요.\n4. 공공기관 보고서에 어울리는 깔끔한 흰 배경, 파란색/청록색 계열, 과하지 않은 아이콘을 사용해주세요.\n5. 모바일 화면에서도 글자가 잘 보이도록 글자 수를 줄이고 크게 배치해주세요.\n6. 차트 아래에는 보고서 삽입용 핵심 해석 문장 2~3개를 짧게 넣어주세요.\n7. 개인정보가 포함될 수 있는 표현은 반드시 비식별화해주세요.\n\n[이미지 안에 포함할 구성]\n- 제목\n- 보고 기간\n- 핵심 수치 3~5개\n- ${v.name} 형태의 시각화 영역\n- 짧은 해석 문장\n- 하단 주의 문구: 개인정보는 비식별 처리\n\n[스타일]\n깔끔한 공공기관 보고서 스타일, 미리캔버스 느낌의 정돈된 인포그래픽, 과장 없는 색상, 읽기 쉬운 큰 글씨, A4 보고서에 붙여넣기 좋은 비율`;
+}
+
+function renderPreview(){
+ const title=val('title','예시 사업');
+ const current=selectedViz==='auto'?'bar':selectedViz;
+ const labels=['상담','방문','연계','종결'];
+ const nums=[80,120,96,45];
+ let html='';
+ if(current==='bar'){
+  html=`<div class="preview-title">📊 막대그래프 예시 · ${title}</div><div class="mock">${labels.map((l,i)=>`<div class="bar-row"><b>${l}</b><div class="bar-track"><div class="bar-fill" style="width:${Math.min(nums[i],130)/130*100}%"></div></div><span>${nums[i]}건</span></div>`).join('')}</div>`;
+ } else if(current==='line'){
+  html=`<div class="preview-title">📈 추세그래프 예시 · 월별 변화</div><svg class="line-svg" viewBox="0 0 320 160"><polyline points="25,120 85,100 145,75 205,88 265,45" fill="none" stroke="#2563eb" stroke-width="5" stroke-linecap="round"/><g fill="#2563eb"><circle cx="25" cy="120" r="5"/><circle cx="85" cy="100" r="5"/><circle cx="145" cy="75" r="5"/><circle cx="205" cy="88" r="5"/><circle cx="265" cy="45" r="5"/></g><g fill="#667085" font-size="12"><text x="20" y="145">1월</text><text x="80" y="145">2월</text><text x="140" y="145">3월</text><text x="200" y="145">4월</text><text x="260" y="145">5월</text></g></svg>`;
+ } else if(current==='pie'){
+  html=`<div class="preview-title">🍩 도넛차트 예시 · 비율/비중</div><svg class="pie-svg" viewBox="0 0 320 160"><circle cx="88" cy="80" r="45" fill="none" stroke="#bfdbfe" stroke-width="24"/><circle cx="88" cy="80" r="45" fill="none" stroke="#2563eb" stroke-width="24" stroke-dasharray="180 283" transform="rotate(-90 88 80)"/><circle cx="88" cy="80" r="22" fill="#fff"/><text x="73" y="86" font-size="16" font-weight="900" fill="#1d4ed8">64%</text><rect x="165" y="45" width="14" height="14" fill="#2563eb"/><text x="188" y="57" font-size="13" fill="#344054">주요 항목</text><rect x="165" y="78" width="14" height="14" fill="#bfdbfe"/><text x="188" y="90" font-size="13" fill="#344054">기타 항목</text></svg>`;
+ } else if(current==='flow'){
+  html=`<div class="preview-title">➡️ 흐름도 예시 · 업무 절차</div><div class="flow"><div class="flow-step">1. 초기상담</div><div style="text-align:center">⬇️</div><div class="flow-step">2. 욕구 파악</div><div style="text-align:center">⬇️</div><div class="flow-step">3. 서비스 연계</div><div style="text-align:center">⬇️</div><div class="flow-step">4. 사후관리</div></div>`;
+ } else if(current==='kpi'){
+  html=`<div class="preview-title">🔢 KPI 카드 예시 · 핵심 숫자</div><div class="kpi-grid"><div class="kpi-box"><div>대상자</div><div class="kpi-num">120명</div></div><div class="kpi-box"><div>상담</div><div class="kpi-num">280건</div></div><div class="kpi-box"><div>연계</div><div class="kpi-num">96건</div></div><div class="kpi-box"><div>집행률</div><div class="kpi-num">73%</div></div></div>`;
+ } else if(current==='info'){
+  html=`<div class="preview-title">🧩 인포그래픽 예시 · 한 장 요약</div><div class="kpi-grid"><div class="kpi-box">① 현황<br><b>대상자 증가</b></div><div class="kpi-box">② 성과<br><b>연계 확대</b></div><div class="kpi-box">③ 변화<br><b>위험 감소</b></div><div class="kpi-box">④ 과제<br><b>지속 관리</b></div></div>`;
+ } else {
+  html=`<div class="preview-title">📋 표+해석 예시 · 문서 삽입용</div><table class="table-mock"><tr><th>구분</th><th>수치</th><th>해석</th></tr><tr><td>상담</td><td>280건</td><td>업무량 증가</td></tr><tr><td>연계</td><td>96건</td><td>서비스 접근성 향상</td></tr><tr><td>만족도</td><td>88%</td><td>긍정 응답 높음</td></tr></table>`;
+ }
+ document.getElementById('preview').innerHTML=html;
+}
+
+async function copyPrompt(){
+ const promptEl=document.getElementById('prompt');
+ const text=promptEl.value||promptEl.innerText||promptEl.textContent||'';
+ const status=document.getElementById('copyStatus');
+ try{
+  if(navigator.clipboard && window.isSecureContext){
+   await navigator.clipboard.writeText(text);
+  }else{
+   const t=document.createElement('textarea');
+   t.value=text; t.setAttribute('readonly','');
+   t.style.position='fixed'; t.style.left='-9999px'; t.style.top='0';
+   document.body.appendChild(t); t.focus(); t.select(); t.setSelectionRange(0, t.value.length);
+   const ok=document.execCommand('copy'); document.body.removeChild(t);
+   if(!ok) throw new Error('execCommand failed');
+  }
+  status.textContent='복사 완료! AI 채팅창에 붙여넣어 주세요.'; showToast('복사되었습니다');
+ }catch(e){
+  selectPromptText();
+  status.textContent='자동 복사가 막혔습니다. 프롬프트 전체를 선택해두었습니다. 휴대폰의 “복사” 메뉴를 눌러 주세요.';
+  showToast('전체 선택됨');
+ }
+}
+function selectPromptText(){
+ const el=document.getElementById('prompt');
+ el.focus();
+ el.select();
+ el.setSelectionRange(0, el.value.length);
+ document.getElementById('copyStatus').textContent='프롬프트 전체가 선택되었습니다. 휴대폰 화면의 “복사”를 누르거나 Ctrl+C를 눌러 주세요.';
+}
+function showToast(message){const toast=document.getElementById('toast'); if(message) toast.textContent=message; else toast.textContent='복사되었습니다'; toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400)}
+function resetForm(){['title','period','data','message'].forEach(id=>document.getElementById(id).value='');selectedDoc='result';selectedViz='auto';renderChips();buildPrompt()}
+['title','period','data','message'].forEach(id=>document.addEventListener('input',e=>{if(e.target.id===id)buildPrompt()}));
+document.getElementById('copyBtn').addEventListener('click', copyPrompt);
+document.getElementById('selectBtn').addEventListener('click', selectPromptText);
+renderChips();buildPrompt();
+</script>
+</body>
+</html>
