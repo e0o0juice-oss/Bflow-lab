@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>출처·법령 기반 맞춤형 지침 생성기</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --ink:#172033; --muted:#667085; --line:#e4e7ec;
+      --primary:#315efb; --primary2:#2448c8; --safe:#0f8a5f; --soft:#eef3ff; --warn:#fff7e6;
+      --radius:18px; --shadow:0 10px 30px rgba(16,24,40,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#eef3ff 0%,#f6f7fb 280px);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;color:var(--ink);}
+    .wrap{max-width:760px;margin:0 auto;padding:24px 16px 80px}
+    header{padding:20px 4px 16px}
+    .badge{display:inline-flex;gap:6px;align-items:center;padding:8px 12px;border-radius:999px;background:#e9fff6;color:var(--safe);font-weight:800;font-size:13px}
+    h1{margin:16px 0 10px;font-size:30px;line-height:1.18;letter-spacing:-.8px}
+    .lead{margin:0;color:var(--muted);font-size:16px;line-height:1.65}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-top:16px}
+    .step{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .num{width:30px;height:30px;border-radius:10px;background:var(--primary);color:white;display:grid;place-items:center;font-weight:900}
+    h2{font-size:19px;margin:0;letter-spacing:-.3px}
+    .hint{color:var(--muted);font-size:14px;margin:4px 0 14px;line-height:1.55}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label.option{display:flex;align-items:center;gap:9px;padding:13px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font-weight:650;font-size:15px;line-height:1.35}
+    label.option:has(input:checked){border-color:var(--primary);background:var(--soft);color:#1d3fb5}
+    input[type="checkbox"],input[type="radio"]{width:18px;height:18px;accent-color:var(--primary);flex:0 0 auto}
+    .textrow{display:none;margin-top:10px}
+    input[type="text"]{width:100%;border:1px solid var(--line);border-radius:14px;padding:14px 14px;font-size:15px;outline:none}
+    input[type="text"]:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(49,94,251,.12)}
+    .safeBox{background:#f0fff8;border:1px solid #b9efd7;border-radius:16px;padding:15px;margin-top:10px}
+    .safeTitle{font-weight:900;color:var(--safe);margin-bottom:9px}
+    .safeList{display:grid;gap:8px;color:#14664b;font-size:14px;line-height:1.45}
+    .safeList span::before{content:"✓ ";font-weight:900}
+    .actions{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(246,247,251,0),rgba(246,247,251,1) 18%);padding:18px 0 8px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    button{border:0;border-radius:15px;padding:15px 14px;font-size:16px;font-weight:900;cursor:pointer}
+    .primary{background:var(--primary);color:white}.primary:hover{background:var(--primary2)}
+    .secondary{background:white;border:1px solid var(--line);color:var(--ink)}
+    .result{display:none}
+    textarea{width:100%;min-height:240px;border:1px solid var(--line);border-radius:16px;padding:15px;font-size:14.5px;line-height:1.7;resize:vertical;outline:none;background:#fcfcfd;color:#1d2939}
+    .copybar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .mini{font-size:14px;padding:12px;border-radius:13px}
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#101828;color:#fff;padding:12px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:10}.toast.show{opacity:1;bottom:34px}
+    .notice{background:var(--warn);border:1px solid #ffd999;border-radius:15px;padding:13px 14px;color:#7a4b00;font-size:14px;line-height:1.55;margin-top:12px}
+    @media(max-width:560px){.wrap{padding:18px 12px 70px}h1{font-size:25px}.grid{grid-template-columns:1fr}.card{padding:17px}.actions{grid-template-columns:1fr}.copybar{grid-template-columns:1fr}textarea{min-height:260px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">🛡️ 안전모드 항상 적용</div>
+      <h1>출처·법령 기반<br>맞춤형 지침 생성기</h1>
+      <p class="lead">사회복지·공공기관 실무자가 ChatGPT 맞춤형 지침에 붙여넣을 수 있는 문구를 자동으로 만들어줍니다.</p>
+    </header>
+
+    <section class="card">
+      <div class="step"><div class="num">1</div><h2>나는 어떤 일을 하나요?</h2></div>
+      <p class="hint">가장 가까운 역할을 선택하세요. 기타를 선택하면 직접 입력할 수 있습니다.</p>
+      <div class="grid" id="jobGrid">
+        <label class="option"><input type="radio" name="job" value="통합사례관리사" checked>통합사례관리사</label>
+        <label class="option"><input type="radio" name="job" value="사회복지사">사회복지사</label>
+        <label class="option"><input type="radio" name="job" value="공무원">공무원</label>
+        <label class="option"><input type="radio" name="job" value="복지관 종사자">복지관 종사자</label>
+        <label class="option"><input type="radio" name="job" value="AI 활용 교육 강사">AI 활용 교육 강사</label>
+        <label class="option"><input type="radio" name="job" value="상담사">상담사</label>
+        <label class="option"><input type="radio" name="job" value="기타">기타</label>
+      </div>
+      <div class="textrow" id="customJobRow"><input id="customJob" type="text" placeholder="예: 지역사회보장협의체 담당자"></div>
+    </section>
+
+    <section class="card">
+      <div class="step"><div class="num">2</div><h2>주요 업무를 선택하세요</h2></div>
+      <p class="hint">여러 개 선택할 수 있습니다. 기본 업무는 미리 선택되어 있습니다.</p>
+      <div class="grid" id="taskGrid">
+        <label class="option"><input type="checkbox" value="상담기록 작성" checked>상담기록 작성</label>
+        <label class="option"><input type="checkbox" value="사례회의 자료 작성" checked>사례회의 자료 작성</label>
+        <label class="option"><input type="checkbox" value="서비스 계획 수립" checked>서비스 계획 수립</label>
+        <label class="option"><input type="checkbox" value="공문 작성" checked>공문 작성</label>
+        <label class="option"><input type="checkbox" value="사업계획서 작성" checked>사업계획서 작성</label>
+        <label class="option"><input type="checkbox" value="결과보고서 작성" checked>결과보고서 작성</label>
+        <label class="option"><input type="checkbox" value="만족도조사 분석" checked>만족도조사 분석</label>
+        <label class="option"><input type="checkbox" value="강의자료 제작" checked>강의자료 제작</label>
+        <label class="option"><input type="checkbox" value="홍보자료 제작" checked>홍보자료 제작</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="step"><div class="num">3</div><h2>원하는 답변 스타일</h2></div>
+      <p class="hint">답변이 어떤 느낌으로 나오면 좋을지 선택하세요.</p>
+      <div class="grid" id="styleGrid">
+        <label class="option"><input type="checkbox" value="초보자도 이해할 수 있도록 쉽게 설명" checked>쉽게 설명</label>
+        <label class="option"><input type="checkbox" value="공공기관 문체 적용" checked>공공기관 문체</label>
+        <label class="option"><input type="checkbox" value="보고서 형식 적용" checked>보고서 형식</label>
+        <label class="option"><input type="checkbox" value="실무 중심으로 작성" checked>실무 중심</label>
+        <label class="option"><input type="checkbox" value="표와 체크리스트 적극 활용" checked>표·체크리스트</label>
+        <label class="option"><input type="checkbox" value="결론 → 근거 → 예시 순서로 작성" checked>결론 → 근거 → 예시</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="step"><div class="num">4</div><h2>항상 적용되는 안전 설정</h2></div>
+      <p class="hint">환각 방지 설정은 매우 엄격으로 고정되어 있으며, 사용자가 해제할 수 없습니다.</p>
+      <div class="safeBox">
+        <div class="safeTitle">출처·법령 기반 안전모드</div>
+        <div class="safeList">
+          <span>사실과 추정을 명확히 구분</span>
+          <span>불확실한 내용은 “확인 필요” 표시</span>
+          <span>존재하지 않는 법령·사업명·통계 생성 금지</span>
+          <span>국가법령정보센터, 보건복지부, 복지로 등 공식 자료 우선</span>
+          <span>법령 해석은 단정하지 않고 실무 참고용으로 안내</span>
+        </div>
+      </div>
+      <div class="notice">법령·제도·지원기준은 수시로 변경될 수 있으므로 최종 판단은 반드시 공식 자료 또는 담당 기관 확인이 필요합니다.</div>
+    </section>
+
+    <div class="actions">
+      <button class="primary" onclick="generate()">맞춤형 지침 생성하기</button>
+      <button class="secondary" onclick="resetForm()">처음부터 다시</button>
+    </div>
+
+    <section class="card result" id="resultCard">
+      <div class="step"><div class="num">✓</div><h2>생성 결과</h2></div>
+      <p class="hint">아래 두 내용을 ChatGPT 맞춤형 지침의 각 입력칸에 붙여넣으세요.</p>
+
+      <h2>1. ChatGPT가 알아야 할 추가 정보</h2>
+      <textarea id="infoText" readonly></textarea>
+      <div class="copybar"><button class="secondary mini" onclick="copyText('infoText')">추가 정보 복사</button></div>
+
+      <br>
+      <h2>2. ChatGPT가 응답하는 방식</h2>
+      <textarea id="responseText" readonly></textarea>
+      <div class="copybar">
+        <button class="secondary mini" onclick="copyText('responseText')">응답 방식 복사</button>
+        <button class="primary mini" onclick="copyAll()">전체 복사</button>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast">복사했습니다</div>
+
+<script>
+  const customJobRow = document.getElementById('customJobRow');
+  document.querySelectorAll('input[name="job"]').forEach(r=>{
+    r.addEventListener('change',()=>{ customJobRow.style.display = r.value === '기타' && r.checked ? 'block' : 'none'; });
+  });
+
+  function checkedValues(selector){
+    return [...document.querySelectorAll(selector)].filter(x=>x.checked).map(x=>x.value);
+  }
+  function selectedJob(){
+    const picked = document.querySelector('input[name="job"]:checked').value;
+    if(picked === '기타') return document.getElementById('customJob').value.trim() || '사회복지·공공기관 실무자';
+    return picked;
+  }
+  function bulletList(items){ return items.map(v=>' - '+v).join('\n'); }
+
+  function generate(){
+    const job = selectedJob();
+    const tasks = checkedValues('#taskGrid input[type="checkbox"]');
+    const styles = checkedValues('#styleGrid input[type="checkbox"]');
+    const taskText = tasks.length ? bulletList(tasks) : ' - 사회복지 및 공공기관 관련 문서 작성';
+    const styleText = styles.length ? bulletList(styles) : ' - 실무 중심으로 쉽게 설명';
+
+    const info = `나는 ${job}이며, 사회복지 및 공공기관 실무와 관련된 업무를 수행한다.\n\n주요 업무는 다음과 같다.\n\n${taskText}\n\n실무에서 바로 활용 가능한 결과물을 선호한다.\n\n공공기관 및 사회복지 현장에서 활용 가능한 내용을 우선적으로 제안해주길 원한다.\n\n복잡한 용어보다는 이해하기 쉬운 설명을 선호한다.\n\n보고서, 공문, 사업계획서, 상담기록 작성 시 실제 현장에서 사용하는 형식과 문체를 우선 적용해주길 바란다.`;
+
+    const response = `답변 시 다음 원칙을 반드시 따른다.\n\n1. 사실과 추정을 명확히 구분한다.\n\n2. 출처가 불명확한 정보는 임의로 생성하지 않는다.\n\n3. 존재하지 않는 법령, 사업명, 통계, 지침을 만들지 않는다.\n\n4. 법령 및 제도 관련 내용은 공식 출처를 우선 참고한다.\n\n5. 답변 시 가능한 경우 출처를 함께 제시한다.\n\n6. 불확실한 내용은 “확인이 필요합니다”라고 표시한다.\n\n7. 법령 해석이 필요한 경우 단정적으로 답변하지 않는다.\n\n8. 법령, 지침, 제도, 복지사업, 지원기준은 변경될 수 있으므로 최종 판단은 국가법령정보센터, 보건복지부, 복지로, 지방자치단체 공식 홈페이지 등 공식 자료 확인이 필요함을 안내한다.\n\n9. 보고서, 공문, 사업계획서, 상담기록은 공공기관 실무 형식에 맞게 작성한다.\n\n10. 개인정보가 포함될 수 있는 내용은 비식별화하고, 민감정보를 그대로 노출하지 않도록 주의한다.\n\n11. 답변 스타일은 다음 기준을 따른다.\n\n${styleText}\n\n12. 법률 자문이 필요한 내용은 참고용 정보임을 명시한다.`;
+
+    document.getElementById('infoText').value = info;
+    document.getElementById('responseText').value = response;
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(e){
+      const temp = document.createElement('textarea');
+      temp.value = text; document.body.appendChild(temp); temp.select(); document.execCommand('copy'); temp.remove();
+    }
+    showToast();
+  }
+  function copyText(id){ copyToClipboard(document.getElementById(id).value); }
+  function copyAll(){
+    const all = '[ChatGPT가 알아야 할 추가 정보]\n' + document.getElementById('infoText').value + '\n\n[ChatGPT가 응답하는 방식]\n' + document.getElementById('responseText').value;
+    copyToClipboard(all);
+  }
+  function showToast(){
+    const t=document.getElementById('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1500);
+  }
+  function resetForm(){
+    document.querySelector('input[name="job"][value="통합사례관리사"]').checked = true;
+    customJobRow.style.display='none'; document.getElementById('customJob').value='';
+    document.querySelectorAll('#taskGrid input,#styleGrid input').forEach(x=>x.checked=true);
+    document.getElementById('resultCard').style.display='none';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+</script>
+</body>
+</html>
