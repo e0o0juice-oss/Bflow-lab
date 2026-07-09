@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 추가 정보 프롬프트</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --card: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --line: #e5e5ea;
+      --accent: #0071e3;
+      --accent-soft: #e8f2ff;
+      --success: #34c759;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(0, 113, 227, 0.12), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100vh;
+      padding: 20px 16px 96px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 24px 4px 18px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.85);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(34px, 9vw, 48px);
+      line-height: 1.05;
+      letter-spacing: -0.06em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 18px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(255,255,255,0.92);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .step {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: var(--text);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.04em;
+      line-height: 1.25;
+    }
+
+    .hint {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .option {
+      position: relative;
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 16px 48px 15px 16px;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .option:active {
+      transform: scale(0.985);
+    }
+
+    .option.selected {
+      border-color: rgba(0,113,227,0.45);
+      background: var(--accent-soft);
+      box-shadow: 0 10px 24px rgba(0,113,227,0.12);
+    }
+
+    .option-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .option-example {
+      margin: 5px 0 0 28px;
+      color: var(--muted);
+      font-size: 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .check {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      border: 1.5px solid #c7c7cc;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .option.selected .check {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .preview {
+      margin-top: 22px;
+      padding: 20px;
+      border-radius: var(--radius-xl);
+      background: #111111;
+      color: #ffffff;
+      box-shadow: 0 20px 46px rgba(0,0,0,0.18);
+    }
+
+    .preview h2 {
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .preview .hint {
+      color: rgba(255,255,255,0.66);
+      margin-bottom: 14px;
+    }
+
+    .output {
+      min-height: 190px;
+      white-space: pre-wrap;
+      word-break: keep-all;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 16px;
+      color: rgba(255,255,255,0.92);
+      font-size: 14.5px;
+      letter-spacing: -0.01em;
+    }
+
+    .actions {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 520px;
+      padding: 12px 16px 18px;
+      background: linear-gradient(to top, rgba(245,245,247,1), rgba(245,245,247,.92), rgba(245,245,247,0));
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .primary,
+    .secondary {
+      border: none;
+      border-radius: 999px;
+      padding: 15px 16px;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.08);
+      transition: transform .18s ease, opacity .18s ease;
+    }
+
+    .primary:active,
+    .secondary:active {
+      transform: scale(0.98);
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 86px;
+      transform: translateX(-50%) translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(29,29,31,0.92);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 10;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (min-width: 700px) {
+      .app {
+        padding-top: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div class="badge">👤 추가 정보 프롬프트</div>
+      <h1>AI가 나를 더 잘 이해하게 해보세요.</h1>
+      <p>카드를 누르기만 하면, 나에 대한 추가 정보 프롬프트가 자동으로 만들어집니다.</p>
+    </section>
+
+    <section class="section" data-section="experience">
+      <div class="section-header">
+        <div>
+          <h2>AI 사용 경험은 어느 정도인가요?</h2>
+          <p class="hint">하나만 선택해 주세요.</p>
+        </div>
+        <div class="step">1</div>
+      </div>
+      <div class="options">
+        <button class="option" data-type="single" data-group="experience" data-text="저는 AI를 처음 사용하는 편입니다." data-extra="AI 관련 표현이나 사용 방법도 쉽게 이해할 수 있도록 설명해 주세요.">
+          <div class="option-title">😊 처음 사용해요</div>
+          <p class="option-example">AI를 거의 사용해 본 적이 없어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="single" data-group="experience" data-text="저는 AI를 가끔 사용하는 편입니다." data-extra="기본적인 설명과 실제 활용 예시가 함께 있으면 좋습니다.">
+          <div class="option-title">🙂 가끔 사용해요</div>
+          <p class="option-example">간단한 질문 정도는 해봤어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="single" data-group="experience" data-text="저는 AI를 자주 사용하는 편입니다." data-extra="바로 활용할 수 있는 실용적인 답변을 선호합니다.">
+          <div class="option-title">😎 자주 사용해요</div>
+          <p class="option-example">생활이나 업무에 자주 활용해요.</p>
+          <span class="check">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section" data-section="interests">
+      <div class="section-header">
+        <div>
+          <h2>가장 관심 있는 분야는 무엇인가요?</h2>
+          <p class="hint">여러 개를 선택할 수 있어요.</p>
+        </div>
+        <div class="step">2</div>
+      </div>
+      <div class="options">
+        <button class="option" data-type="multi" data-group="interests" data-text="업무" data-extra="보고서, 이메일, 회의 정리 같은 업무 활용에 관심이 있습니다.">
+          <div class="option-title">💼 업무</div>
+          <p class="option-example">보고서, 이메일, 회의 정리</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="공부" data-extra="자격증, 외국어, 새로운 분야 배우기에 관심이 있습니다.">
+          <div class="option-title">📚 공부</div>
+          <p class="option-example">자격증, 외국어, 새로운 분야 배우기</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="취업·이직" data-extra="이력서, 자기소개서, 면접 준비에 관심이 있습니다.">
+          <div class="option-title">🌱 취업·이직</div>
+          <p class="option-example">이력서, 자기소개서, 면접 준비</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="창업" data-extra="아이디어 정리, 사업 준비, 고객 분석에 관심이 있습니다.">
+          <div class="option-title">🚀 창업</div>
+          <p class="option-example">아이디어 정리, 사업 준비, 고객 분석</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="건강" data-extra="운동, 식단, 건강 관리에 관심이 있습니다.">
+          <div class="option-title">💪 건강</div>
+          <p class="option-example">운동, 식단, 건강 관리</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="여행" data-extra="여행 일정, 맛집, 준비물 정리에 관심이 있습니다.">
+          <div class="option-title">✈️ 여행</div>
+          <p class="option-example">여행 일정, 맛집, 준비물</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="재테크" data-extra="예산 관리, 소비 정리, 금융 정보 이해에 관심이 있습니다.">
+          <div class="option-title">💰 재테크</div>
+          <p class="option-example">예산 관리, 소비 정리, 금융 정보 이해</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="글쓰기" data-extra="블로그, 문장 정리, 발표 자료 작성에 관심이 있습니다.">
+          <div class="option-title">✍️ 글쓰기</div>
+          <p class="option-example">블로그, 문장 정리, 발표 자료</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="interests" data-text="일상생활" data-extra="일정 정리, 생활 정보, 가족과 함께 쓰는 활용법에 관심이 있습니다.">
+          <div class="option-title">🏠 일상생활</div>
+          <p class="option-example">일정 정리, 생활 정보, 가족과 함께 활용</p>
+          <span class="check">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section" data-section="memory">
+      <div class="section-header">
+        <div>
+          <h2>AI가 답변할 때 기억했으면 하는 점은?</h2>
+          <p class="hint">여러 개를 선택할 수 있어요.</p>
+        </div>
+        <div class="step">3</div>
+      </div>
+      <div class="options">
+        <button class="option" data-type="multi" data-group="memory" data-text="저는 초보자입니다." data-extra="어려운 내용은 쉬운 말로 풀어서 설명해 주세요.">
+          <div class="option-title">🌿 저는 초보자입니다</div>
+          <p class="option-example">어려운 내용은 쉽게 설명해 주세요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="memory" data-text="실생활에서 바로 활용할 수 있는 내용을 좋아합니다." data-extra="현실적인 예시와 함께 알려주세요.">
+          <div class="option-title">🧩 바로 활용하고 싶어요</div>
+          <p class="option-example">현실적인 예시가 있으면 좋아요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="memory" data-text="시간이 많지 않습니다." data-extra="중요한 내용을 먼저 알려주세요.">
+          <div class="option-title">⏱️ 시간이 많지 않아요</div>
+          <p class="option-example">핵심 내용을 먼저 알고 싶어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="memory" data-text="비교해서 설명해 주면 이해하기 쉽습니다." data-extra="장단점이나 차이점을 함께 설명해 주세요.">
+          <div class="option-title">⚖️ 비교 설명이 좋아요</div>
+          <p class="option-example">장단점을 함께 보면 이해가 쉬워요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="memory" data-text="중요한 내용은 다시 정리해 주면 좋습니다." data-extra="마지막에 핵심 요약을 함께 제공해 주세요.">
+          <div class="option-title">📝 마지막 요약이 좋아요</div>
+          <p class="option-example">중요한 내용을 다시 정리해 주세요.</p>
+          <span class="check">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section" data-section="device">
+      <div class="section-header">
+        <div>
+          <h2>주로 어떤 기기에서 AI를 사용하시나요?</h2>
+          <p class="hint">하나만 선택해 주세요.</p>
+        </div>
+        <div class="step">4</div>
+      </div>
+      <div class="options">
+        <button class="option" data-type="single" data-group="device" data-text="저는 주로 스마트폰으로 AI를 사용합니다." data-extra="모바일에서 보기 쉽고 따라 하기 쉬운 방식이면 좋습니다.">
+          <div class="option-title">📱 스마트폰</div>
+          <p class="option-example">짧고 보기 쉬운 답변이 좋아요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="single" data-group="device" data-text="저는 주로 태블릿으로 AI를 사용합니다." data-extra="읽기 편한 구성과 단계별 정리를 선호합니다.">
+          <div class="option-title">📲 태블릿</div>
+          <p class="option-example">읽기 편한 구성이 좋아요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="single" data-group="device" data-text="저는 주로 노트북으로 AI를 사용합니다." data-extra="작업에 바로 옮길 수 있는 정리된 답변을 선호합니다.">
+          <div class="option-title">💻 노트북</div>
+          <p class="option-example">문서나 작업에 바로 쓰고 싶어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="single" data-group="device" data-text="저는 주로 데스크톱으로 AI를 사용합니다." data-extra="자세한 정보와 구조적인 설명도 잘 활용할 수 있습니다.">
+          <div class="option-title">🖥️ 데스크톱</div>
+          <p class="option-example">넓은 화면에서 자세히 보고 싶어요.</p>
+          <span class="check">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section" data-section="context">
+      <div class="section-header">
+        <div>
+          <h2>AI가 알아두면 좋은 정보가 있나요?</h2>
+          <p class="hint">여러 개를 선택할 수 있어요.</p>
+        </div>
+        <div class="step">5</div>
+      </div>
+      <div class="options">
+        <button class="option" data-type="multi" data-group="context" data-text="저는 새로운 기회를 준비하고 있습니다." data-extra="준비 과정에서 현실적인 도움을 받고 싶습니다.">
+          <div class="option-title">🌱 새로운 기회를 준비 중이에요</div>
+          <p class="option-example">취업, 이직, 새로운 시작을 준비해요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="context" data-text="업무 효율을 높이고 싶습니다." data-extra="시간을 줄이고 결과물을 더 깔끔하게 만들고 싶습니다.">
+          <div class="option-title">⚡ 업무 효율을 높이고 싶어요</div>
+          <p class="option-example">더 빠르고 깔끔하게 일하고 싶어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="context" data-text="꾸준히 공부하고 있습니다." data-extra="학습 계획과 이해하기 쉬운 설명이 도움이 됩니다.">
+          <div class="option-title">📚 꾸준히 공부하고 있어요</div>
+          <p class="option-example">새로운 것을 계속 배우고 있어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="context" data-text="건강을 중요하게 생각합니다." data-extra="일상에서 실천할 수 있는 건강 관련 정보를 선호합니다.">
+          <div class="option-title">💚 건강을 중요하게 생각해요</div>
+          <p class="option-example">운동, 식단, 생활 습관에 관심이 있어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="context" data-text="가족과 함께 활용할 예정입니다." data-extra="여러 사람이 이해하기 쉬운 표현이면 좋습니다.">
+          <div class="option-title">👨‍👩‍👧 가족과 함께 활용해요</div>
+          <p class="option-example">가족도 이해하기 쉽게 쓰고 싶어요.</p>
+          <span class="check">✓</span>
+        </button>
+        <button class="option" data-type="multi" data-group="context" data-text="AI를 생활 속에서 적극 활용하고 싶습니다." data-extra="일상 문제를 해결하는 실용적인 활용법을 알고 싶습니다.">
+          <div class="option-title">✨ 생활 속에서 활용하고 싶어요</div>
+          <p class="option-example">일정, 정리, 정보 찾기에 쓰고 싶어요.</p>
+          <span class="check">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="preview" id="preview">
+      <h2>완성된 추가 정보 프롬프트</h2>
+      <p class="hint">선택한 내용이 여기에 바로 반영됩니다.</p>
+      <div class="output" id="output"></div>
+    </section>
+  </main>
+
+  <div class="actions">
+    <div class="button-row">
+      <button class="secondary" id="resetBtn">다시 선택</button>
+      <button class="primary" id="copyBtn">프롬프트 복사</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">복사했어요</div>
+
+  <script>
+    const options = document.querySelectorAll('.option');
+    const output = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const toast = document.getElementById('toast');
+
+    const groupLabels = {
+      experience: 'AI 사용 경험',
+      interests: '관심 분야',
+      memory: '기억했으면 하는 점',
+      device: '사용 기기',
+      context: '알아두면 좋은 정보'
+    };
+
+    function selectedByGroup(group) {
+      return Array.from(document.querySelectorAll(`.option.selected[data-group="${group}"]`));
+    }
+
+    function buildPrompt() {
+      const lines = [];
+      lines.push('아래 내용은 저를 더 잘 이해하기 위한 추가 정보입니다.');
+      lines.push('답변할 때 가능한 범위에서 이 정보를 참고해 주세요.');
+      lines.push('');
+
+      Object.keys(groupLabels).forEach(group => {
+        const selected = selectedByGroup(group);
+        if (selected.length === 0) return;
+
+        lines.push(`[${groupLabels[group]}]`);
+        selected.forEach(item => {
+          const text = item.dataset.text;
+          const extra = item.dataset.extra;
+          if (text) lines.push(`- ${text}`);
+          if (extra) lines.push(`  ${extra}`);
+        });
+        lines.push('');
+      });
+
+      if (lines.length <= 3) {
+        return '카드를 선택하면 여기에 추가 정보 프롬프트가 만들어집니다.';
+      }
+
+      return lines.join('\n').trim();
+    }
+
+    function updateOutput() {
+      output.textContent = buildPrompt();
+    }
+
+    options.forEach(option => {
+      option.addEventListener('click', () => {
+        const type = option.dataset.type;
+        const group = option.dataset.group;
+
+        if (type === 'single') {
+          document.querySelectorAll(`.option[data-group="${group}"]`).forEach(item => {
+            item.classList.remove('selected');
+          });
+          option.classList.add('selected');
+        } else {
+          option.classList.toggle('selected');
+        }
+
+        updateOutput();
+      });
+    });
+
+    resetBtn.addEventListener('click', () => {
+      options.forEach(option => option.classList.remove('selected'));
+      updateOutput();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      const text = output.textContent.trim();
+      if (!text || text.startsWith('카드를 선택하면')) {
+        showToast('먼저 카드를 선택해 주세요');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('프롬프트를 복사했어요');
+      } catch (error) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+        showToast('프롬프트를 복사했어요');
+      }
+    });
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    updateOutput();
+  </script>
+</body>
+</html>
