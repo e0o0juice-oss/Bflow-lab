@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PPT Prompt Builder (Mobile App)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&family=Comfortaa:wght@700&family=Playfair+Display:wght@700&family=Urbanist:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+        }
+        .safe-bottom {
+            padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+        }
+        .active-touch:active {
+            transform: scale(0.97);
+            transition: 0.1s;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        /* 시뮬레이터 슬라이드 렌더링용 애니메이션 */
+        .slide-entry {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 max-w-[480px] mx-auto min-h-screen shadow-2xl relative overflow-x-hidden flex flex-col">
+
+    <!-- 모바일 앱 헤더 -->
+    <header class="bg-indigo-700 text-white p-4 sticky top-0 z-50 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-2.5">
+            <div class="bg-white/20 p-2 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-300 text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-extrabold leading-none tracking-tight">비주얼 PPT 빌더</h1>
+                <p class="text-[9px] text-indigo-200 mt-0.5">20년차 개발자의 프롬프트 엔진</p>
+            </div>
+        </div>
+        <div class="text-[9px] bg-indigo-600 px-2 py-0.5 rounded-full border border-indigo-400 font-bold">
+            PRO v2.0
+        </div>
+    </header>
+
+    <!-- 메인 네이티브 뷰 영역 -->
+    <main class="flex-1 p-4 safe-bottom overflow-y-auto bg-slate-50">
+        
+        <!-- ================= 1. 기획 & 디자인 탭 ================= -->
+        <section id="view-inputs" class="space-y-6">
+            
+            <!-- 원클릭 프리셋 불러오기 -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-amber-500"></i> 원클릭 퀵 프리셋
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('ai_edu')" class="active-touch p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition flex flex-col justify-center h-14">
+                        <span class="text-[11px] font-extrabold text-slate-700 truncate block w-full">40대 AI 활용교육</span>
+                        <span class="text-[9px] text-slate-400">#아날로그 #인포그래픽</span>
+                    </button>
+                    <button onclick="applyPreset('ir_pitch')" class="active-touch p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl text-left transition flex flex-col justify-center h-14">
+                        <span class="text-[11px] font-extrabold text-slate-700 truncate block w-full">스타트업 IR 피칭</span>
+                        <span class="text-[9px] text-slate-400">#다크프로 #데이터표</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 세부 기획 조건 입력 폼 -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                <h3 class="text-xs font-extrabold text-indigo-950 border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+                    <span>1. 세부 기획 조건 설정 (직접 작성 가능)</span>
+                </h3>
+                
+                <!-- 발표 주제 입력란 -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">발표 주제 및 핵심 내용</label>
+                        <select onchange="fillTopicPreset(this)" class="text-[9px] bg-slate-100 border-none text-indigo-700 font-bold rounded-md px-1.5 py-0.5 outline-none">
+                            <option value="">💡 주제 예시 보기</option>
+                            <option value="40대 구직자를 위한 3시간 코스 모바일 AI 음성 실습 및 전단지 제작 교육">🎓 40대 모바일 AI 교실</option>
+                            <option value="로컬 맛집 사장님들을 위한 1인 스마트 배달 자동화 솔루션 IR 발표">💰 소상공인 솔루션 IR</option>
+                            <option value="친환경 유기농 화장품 브랜드의 백화점 입점 기획안 및 타겟 마케팅 제안">🏷️ 브랜드 입점 제안서</option>
+                        </select>
+                    </div>
+                    <textarea id="input-topic" oninput="updateAll()" placeholder="원하시는 주제를 직접 자유롭게 입력하세요..." 
+                        class="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none min-h-[90px] transition-all resize-none"></textarea>
+                </div>
+
+                <!-- 목적 & 청중 셀렉터 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">발표의 목적</label>
+                        <select id="input-purpose" onchange="updateAll()" class="w-full p-2.5 text-[11px] rounded-xl border border-slate-200 bg-white outline-none">
+                            <option value="강의 및 실습 교육">강의 및 실습 교육</option>
+                            <option value="투자 유치 (IR 피칭)">투자 유치 (IR)</option>
+                            <option value="회사 업무/전략 보고">회사 업무 보고</option>
+                            <option value="브랜드 제휴 및 소개">브랜드 마케팅 제안</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">대상 청중 성향</label>
+                        <select id="input-audience" onchange="updateAll()" class="w-full p-2.5 text-[11px] rounded-xl border border-slate-200 bg-white outline-none">
+                            <option value="스마트 기기에 낯선 입문자 및 장노년층">초보자/시니어</option>
+                            <option value="혜택과 강점을 중시하는 일반 대중">일반 대중</option>
+                            <option value="도메인 실무진 및 전문가">실무자/전문가</option>
+                            <option value="사내 주요 임원 및 의사결정권자">임원/결정권자</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 분량 및 어조 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">목표 장수</label>
+                        <select id="input-length" onchange="updateAll()" class="w-full p-2.5 text-[11px] rounded-xl border border-slate-200 bg-white outline-none">
+                            <option value="5장 내외">5장 내외 (숏)</option>
+                            <option value="10장 내외" selected>10장 내외 (기본)</option>
+                            <option value="20장 이상">20장 이상 (롱)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">말하는 투</label>
+                        <select id="input-tone" onchange="updateAll()" class="w-full p-2.5 text-[11px] rounded-xl border border-slate-200 bg-white outline-none">
+                            <option value="친근하고 차분하며 유쾌한 톤">친근하고 유쾌하게</option>
+                            <option value="진중하고 신뢰감 높은 톤">진중하고 신뢰감있게</option>
+                            <option value="세련되고 트렌디한 감각적 톤">감각적이고 세련되게</option>
+                            <option value="수치 지향적인 데이터 중심 톤">데이터 분석식으로</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 비주얼 레이아웃 엔진 (★ 가독성 극대화 양식 지정) -->
+            <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm space-y-4 ring-2 ring-indigo-500/5">
+                <h3 class="text-xs font-extrabold text-indigo-950 border-b border-slate-100 pb-2 flex items-center justify-between">
+                    <span>2. 비주얼 레이아웃 엔진</span>
+                    <i class="fa-solid fa-chart-pie text-indigo-600"></i>
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-2 text-center">
+                    <button onclick="setVisualFormat('infographic')" id="vf-infographic" class="vf-btn active-touch border-2 p-3 rounded-xl flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-shapes text-lg"></i>
+                        <span class="text-[10px] font-bold">인포그래픽형</span>
+                        <span class="text-[8px] text-slate-400">도형/비주얼 중심</span>
+                    </button>
+                    <button onclick="setVisualFormat('table')" id="vf-table" class="vf-btn active-touch border-2 p-3 rounded-xl flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-table-list text-lg"></i>
+                        <span class="text-[10px] font-bold">비교/분석 표</span>
+                        <span class="text-[8px] text-slate-400">표 형식 깔끔 정리</span>
+                    </button>
+                    <button onclick="setVisualFormat('process')" id="vf-process" class="vf-btn active-touch border-2 p-3 rounded-xl flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-arrow-right-long text-lg"></i>
+                        <span class="text-[10px] font-bold">단계별 프로세스</span>
+                        <span class="text-[8px] text-slate-400">화살표 흐름도</span>
+                    </button>
+                    <button onclick="setVisualFormat('card')" id="vf-card" class="vf-btn active-touch border-2 p-3 rounded-xl flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-rectangle-list text-lg"></i>
+                        <span class="text-[10px] font-bold">요약 카드형</span>
+                        <span class="text-[8px] text-slate-400">큼직한 카드 정보</span>
+                    </button>
+                </div>
+                <p class="text-[9px] text-slate-400 text-center italic">※ 선택하신 시각화 레이아웃 포맷 지침이 프롬프트에 자동 심어집니다.</p>
+            </div>
+
+            <!-- PPT 디자인 컨셉 스타일러 -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                <h3 class="text-xs font-extrabold text-indigo-950 border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-palette text-indigo-600"></i>
+                    <span>3. PPT 디자인 컨셉 지정</span>
+                </h3>
+
+                <!-- 테마 선택 -->
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">디자인 스타일 테마</label>
+                    <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                        <button onclick="setTheme('academic')" id="theme-academic" class="theme-btn active-touch flex-shrink-0 w-24 p-3 border-2 rounded-xl text-center space-y-1 transition bg-white">
+                            <div class="w-full h-8 bg-slate-800 rounded-md"></div>
+                            <span class="text-[10px] font-bold block">학술 블루</span>
+                        </button>
+                        <button onclick="setTheme('playful')" id="theme-playful" class="theme-btn active-touch flex-shrink-0 w-24 p-3 border-2 rounded-xl text-center space-y-1 transition bg-white">
+                            <div class="w-full h-8 bg-pink-300 rounded-md"></div>
+                            <span class="text-[10px] font-bold block">파스텔</span>
+                        </button>
+                        <button onclick="setTheme('analog')" id="theme-analog" class="theme-btn active-touch flex-shrink-0 w-24 p-3 border-2 rounded-xl text-center space-y-1 transition bg-white">
+                            <div class="w-full h-8 bg-orange-100 rounded-md"></div>
+                            <span class="text-[10px] font-bold block">아날로그</span>
+                        </button>
+                        <button onclick="setTheme('dark')" id="theme-dark" class="theme-btn active-touch flex-shrink-0 w-24 p-3 border-2 rounded-xl text-center space-y-1 transition bg-white">
+                            <div class="w-full h-8 bg-slate-950 border border-slate-800 rounded-md"></div>
+                            <span class="text-[10px] font-bold block">다크 프로</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 강조 컬러칩 -->
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">강조 포인트 색상 (Accent Color)</label>
+                    <div class="flex items-center gap-3 justify-between bg-slate-50 p-2.5 rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <button onclick="setAccent('#0d9488', 'Teal')" id="color-teal" class="w-7 h-7 rounded-full bg-[#0d9488] active-touch border-2 transition relative flex items-center justify-center text-white text-[10px]"></button>
+                            <button onclick="setAccent('#e11d48', 'Rose')" id="color-rose" class="w-7 h-7 rounded-full bg-[#e11d48] active-touch border-2 transition relative flex items-center justify-center text-white text-[10px]"></button>
+                            <button onclick="setAccent('#4f46e5', 'Indigo')" id="color-indigo" class="w-7 h-7 rounded-full bg-[#4f46e5] active-touch border-2 transition relative flex items-center justify-center text-white text-[10px]"></button>
+                            <button onclick="setAccent('#eab308', 'Amber')" id="color-amber" class="w-7 h-7 rounded-full bg-[#eab308] active-touch border-2 transition relative flex items-center justify-center text-white text-[10px]"></button>
+                            <button onclick="setAccent('#10b981', 'Emerald')" id="color-emerald" class="w-7 h-7 rounded-full bg-[#10b981] active-touch border-2 transition relative flex items-center justify-center text-white text-[10px]"></button>
+                        </div>
+                        <span id="accent-label" class="text-[10px] bg-white text-slate-600 px-2.5 py-1 rounded-md font-bold border border-slate-200">Teal (#0d9488)</span>
+                    </div>
+                </div>
+
+                <!-- 카드 모서리 각도 -->
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">구획 테두리 스타일</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setEdge('rounded-xl')" id="edge-rounded" class="active-touch border-2 p-2 rounded-xl text-center text-xs font-bold transition">
+                            둥글게 (부드럽게)
+                        </button>
+                        <button onclick="setEdge('rounded-none')" id="edge-sharp" class="active-touch border-2 p-2 rounded-xl text-center text-xs font-bold transition">
+                            에지 있게 (직각)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 생성 전환 유도 버튼 -->
+            <button onclick="switchView('prompt')" class="active-touch w-full py-4 bg-indigo-700 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-100 flex items-center justify-center gap-2">
+                <span>마스터 프롬프트 추출하기</span> <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </section>
+
+        <!-- ================= 2. 프롬프트 추출 탭 ================= -->
+        <section id="view-prompt" class="hidden space-y-4">
+            
+            <div class="bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col">
+                <!-- 아웃풋 헤더 -->
+                <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-900">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Structured Master Prompt
+                    </span>
+                    <button onclick="copyPrompt()" class="active-touch bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                        <i class="fa-regular fa-copy"></i> 복사하기
+                    </button>
+                </div>
+                
+                <!-- 프롬프트 내용 콘솔 -->
+                <div id="prompt-output" class="p-4 font-mono text-[10px] text-slate-300 leading-relaxed overflow-y-auto max-h-[400px] whitespace-pre-wrap bg-slate-950 custom-scrollbar"></div>
+                
+                <!-- 활용 안내판 -->
+                <div class="bg-indigo-950/40 p-4 border-t border-slate-900 flex gap-2.5 items-start">
+                    <i class="fa-solid fa-circle-info text-indigo-400 text-sm mt-0.5"></i>
+                    <p class="text-[10px] text-indigo-200 leading-relaxed">
+                        위 복사 버튼을 누르신 후 **ChatGPT**나 **Claude** 창에 그대로 붙여넣으세요! 선택하신 비주얼 엔진과 60-30-10 디자인 배색 설계가 자동 인지되어 출력됩니다.
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="switchView('preview')" class="active-touch w-full py-3.5 bg-slate-900 text-white font-bold rounded-2xl flex items-center justify-center gap-2 text-xs">
+                <i class="fa-solid fa-desktop"></i> 가상 AI 미리보기 시뮬레이터 가기
+            </button>
+        </section>
+
+        <!-- ================= 3. 실시간 미리보기 탭 (시뮬레이터) ================= -->
+        <section id="view-preview" class="hidden space-y-4">
+            <div class="flex items-center justify-between p-2">
+                <div>
+                    <h3 class="text-xs font-extrabold text-slate-800">모바일 AI 렌더링 시뮬레이션</h3>
+                    <p class="text-[9px] text-slate-500">지정한 비주얼 포맷과 디자인 스타일이 실시간 동적 적용됩니다.</p>
+                </div>
+                <button onclick="renderSimulation()" class="active-touch text-[9px] text-indigo-600 font-extrabold bg-indigo-100/60 px-2.5 py-1.5 rounded-md flex items-center gap-1">
+                    <i class="fa-solid fa-arrows-rotate"></i> 갱신
+                </button>
+            </div>
+
+            <!-- 시뮬레이터 실시간 장표 컨테이너 -->
+            <div id="sim-container" class="space-y-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                <!-- JS가 동적으로 슬라이드를 렌더링하여 채워 넣음 -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 모바일 앱 바텀 내비게이션 바 -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-slate-200 h-16 flex items-center justify-around z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+        <button onclick="switchView('inputs')" id="nav-inputs" class="flex flex-col items-center gap-1 text-slate-400 transition active-touch">
+            <i class="fa-solid fa-pen-ruler text-lg"></i>
+            <span class="text-[9px] font-bold">기획/디자인</span>
+        </button>
+        <button onclick="switchView('prompt')" id="nav-prompt" class="flex flex-col items-center gap-1 text-slate-400 transition active-touch">
+            <i class="fa-solid fa-code text-lg"></i>
+            <span class="text-[9px] font-bold">프롬프트</span>
+        </button>
+        <button onclick="switchView('preview')" id="nav-preview" class="flex flex-col items-center gap-1 text-slate-400 transition active-touch">
+            <i class="fa-solid fa-desktop text-lg"></i>
+            <span class="text-[9px] font-bold">미리보기</span>
+        </button>
+    </nav>
+
+    <!-- 안드로이드/iOS 스타일 토스트 메시지 -->
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-bold px-5 py-3 rounded-full shadow-2xl opacity-0 transition-all z-[60] pointer-events-none flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span>복사되었습니다!</span>
+    </div>
+
+    <!-- PPT 프롬프트 빌더 자바스크립트 엔진 -->
+    <script>
+        // 전역 앱 상태 관리
+        let currentVisualFormat = 'infographic';
+        let currentTheme = 'analog';
+        let currentAccent = '#0d9488';
+        let currentAccentName = 'Teal';
+        let currentEdge = 'rounded-xl';
+
+        // 1. 테마 사양 테이블 (WCAG 준수 및 60-30-10 규칙 명세화)
+        const themeSpecifications = {
+            academic: {
+                name: "학술 블루 & 웜크림 (고대비 학회용)",
+                bgColor: "#FAF9F6", // Cream
+                textColor: "#0f172a", // Navy Dark
+                subColor: "#475569", // Gray
+                font: "font-family: 'Playfair Display', serif;",
+                desc: "논리적 입증과 학구적 검증이 요구되는 격식 있는 세미나에 어울리는 구성"
+            },
+            playful: {
+                name: "캐주얼 파스텔 멀티컬러 (활력 교육용)",
+                bgColor: "#FAF8FF", // Soft Lilac
+                textColor: "#121212", 
+                subColor: "#4b5563",
+                font: "font-family: 'Comfortaa', sans-serif;",
+                desc: "흥미 유발과 창의적 상호작용을 중시하는 대중적 소통 채널에 알맞는 구성"
+            },
+            analog: {
+                name: "감성 아날로그 웜베이지 (실무 밀착형)",
+                bgColor: "#FAF6F0", // Warm Ivory
+                textColor: "#27211a", // Warm Dark Brown
+                subColor: "#57534e",
+                font: "font-family: 'Pretendard', sans-serif;",
+                desc: "공공 안내문, 일상의 복잡한 업무를 따뜻하게 풀어나가는 친절한 배색"
+            },
+            dark: {
+                name: "다크 프로 테크놀로지 (고대비 IR 피칭용)",
+                bgColor: "#090d16", // Intense dark
+                textColor: "#f8fafc", // Near white
+                subColor: "#94a3b8",
+                font: "font-family: 'Urbanist', sans-serif;",
+                desc: "고성능 기술 가치 입증 및 투자자들의 순간 몰입을 유도하는 사이버네틱 톤"
+            }
+        };
+
+        // 2. 비주얼 포맷 정의 사양 (그림 위주 가독성 지침)
+        const visualFormatDetails = {
+            infographic: {
+                title: "인포그래픽(Infographic) 시각 도표형",
+                rule: "절대로 한 줄 이상의 텍스트 문장을 통째로 적지 마십시오. 모든 정보는 핵심 수치나 키워드를 원형 차트나 3단 배열 픽토그램 레이아웃 형태로 도해화하여 가독성을 극대화하십시오."
+            },
+            table: {
+                title: "비교/대조 분석 테이블(Table)형",
+                rule: "정보 간의 명확한 분석을 위해 수평/수직 구분선이 있는 가독성 좋은 표(Table)로 출력하십시오. 각 행에는 직관적인 이모지 체크(✔️) 및 엑스(❌) 아이콘을 적용하여 시각적으로 정돈되게 기획하십시오."
+            },
+            process: {
+                title: "단계별 프로세스(Process) 타임라인형",
+                rule: "모든 슬라이드의 흐름은 화살표(➔) 형태의 단계별 인덱스를 가진 수평 타임라인 레이아웃으로 출력하십시오. 단계 번호를 크게 강조하고 세부 텍스트는 20자 미만으로 가독성있게 단축시키십시오."
+            },
+            card: {
+                title: "핵심 요약 카드(Card Grid)형",
+                rule: "정보를 2열 종대 혹은 3열 격자 형태의 독립된 사각형 카드(Card) 레이아웃에 분배하여 배치하십시오. 각 카드는 큰 글씨의 요약 숫자 혹은 이모지 아이콘을 좌측 상단에 고정해야 합니다."
+            }
+        };
+
+        // 3. 프리셋 정의 세팅
+        const presets = {
+            ai_edu: {
+                topic: "40대 재취업 희망자를 위한 모바일 AI 앱 활용법 및 이미지 전단지 만들기 3시간 실습 교육 가이드",
+                purpose: "강의 및 실습 교육",
+                audience: "스마트 기기에 낯선 입문자 및 장노년층",
+                length: "10장 내외",
+                tone: "친근하고 차분하며 유쾌한 톤",
+                visual: "infographic",
+                theme: "analog",
+                accent: "#0d9488",
+                accentName: "Teal",
+                edge: "rounded-xl"
+            },
+            ir_pitch: {
+                topic: "로컬 자영업자들을 위한 온디바이스 스마트 배달 자동화 비서 시스템 '퀵비서' 투자 유치 IR 피칭 데크 및 성장 지표",
+                purpose: "투자 유치 (IR 피칭)",
+                audience: "사내 주요 임원 및 의사결정권자",
+                length: "5장 내외",
+                tone: "수치 지향적인 데이터 중심 톤",
+                visual: "table",
+                theme: "dark",
+                accent: "#eab308",
+                accentName: "Amber",
+                edge: "rounded-none"
+            }
+        };
+
+        // 뷰 전환 컨트롤러
+        function switchView(viewId) {
+            document.getElementById('view-inputs').classList.add('hidden');
+            document.getElementById('view-prompt').classList.add('hidden');
+            document.getElementById('view-preview').classList.add('hidden');
+
+            document.getElementById('nav-inputs').className = 'flex flex-col items-center gap-1 text-slate-400 transition active-touch';
+            document.getElementById('nav-prompt').className = 'flex flex-col items-center gap-1 text-slate-400 transition active-touch';
+            document.getElementById('nav-preview').className = 'flex flex-col items-center gap-1 text-slate-400 transition active-touch';
+
+            if (viewId === 'inputs') {
+                document.getElementById('view-inputs').classList.remove('hidden');
+                document.getElementById('nav-inputs').className = 'flex flex-col items-center gap-1 text-indigo-700 transition active-touch';
+            } else if (viewId === 'prompt') {
+                document.getElementById('view-prompt').classList.remove('hidden');
+                document.getElementById('nav-prompt').className = 'flex flex-col items-center gap-1 text-indigo-700 transition active-touch';
+                generatePromptText();
+            } else if (viewId === 'preview') {
+                document.getElementById('view-preview').classList.remove('hidden');
+                document.getElementById('nav-preview').className = 'flex flex-col items-center gap-1 text-indigo-700 transition active-touch';
+                renderSimulation();
+            }
+        }
+
+        // 비주얼 포맷 버튼 선택 하이라이트
+        function setVisualFormat(format) {
+            currentVisualFormat = format;
+            document.querySelectorAll('.vf-btn').forEach(btn => {
+                btn.className = "vf-btn active-touch border-2 border-slate-200 p-3 rounded-xl flex flex-col items-center gap-1.5 transition bg-white";
+            });
+            const activeBtn = document.getElementById(`vf-${format}`);
+            activeBtn.className = "vf-btn active-touch border-2 border-indigo-600 bg-indigo-50/70 p-3 rounded-xl flex flex-col items-center gap-1.5 transition text-indigo-950";
+            updateAll();
+        }
+
+        // 디자인 테마 변경
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.className = "theme-btn active-touch flex-shrink-0 w-24 p-3 border-2 border-slate-200 rounded-xl text-center space-y-1 transition bg-white";
+            });
+            const activeBtn = document.getElementById(`theme-${theme}`);
+            activeBtn.className = "theme-btn active-touch flex-shrink-0 w-24 p-3 border-2 border-indigo-600 rounded-xl text-center space-y-1 transition bg-indigo-50/40 text-indigo-950";
+            
+            // 테마에 맞는 매칭 스타일 추천
+            if (theme === 'academic') { setAccent('#4f46e5', 'Indigo'); setEdge('rounded-none'); }
+            else if (theme === 'playful') { setAccent('#e11d48', 'Rose'); setEdge('rounded-xl'); }
+            else if (theme === 'analog') { setAccent('#0d9488', 'Teal'); setEdge('rounded-xl'); }
+            else if (theme === 'dark') { setAccent('#eab308', 'Amber'); setEdge('rounded-none'); }
+            
+            updateAll();
+        }
+
+        // 엑센트 컬러 변경
+        function setAccent(hex, name) {
+            currentAccent = hex;
+            currentAccentName = name;
+            
+            const colors = ['teal', 'rose', 'indigo', 'amber', 'emerald'];
+            colors.forEach(col => {
+                const btn = document.getElementById(`color-${col}`);
+                btn.className = btn.className.split(' ').filter(c => !c.startsWith('ring-') && c !== 'border-slate-800').join(' ');
+                btn.innerHTML = '';
+            });
+            
+            const mapping = {'#0d9488': 'teal', '#e11d48': 'rose', '#4f46e5': 'indigo', '#eab308': 'amber', '#10b981': 'emerald'};
+            const activeBtn = document.getElementById(`color-${mapping[hex]}`);
+            activeBtn.className += ' ring-4 ring-indigo-200 border-slate-800';
+            activeBtn.innerHTML = '<i class="fa-solid fa-check text-[10px]"></i>';
+
+            document.getElementById('accent-label').textContent = `${name} (${hex})`;
+            updateAll();
+        }
+
+        // 카드 둥글기 모서리 제어
+        function setEdge(edge) {
+            currentEdge = edge;
+            const roundBtn = document.getElementById('edge-rounded');
+            const sharpBtn = document.getElementById('edge-sharp');
+            if (edge === 'rounded-xl') {
+                roundBtn.className = "active-touch border-2 border-indigo-600 bg-indigo-50 text-indigo-700 p-2 rounded-xl text-center text-xs font-bold transition";
+                sharpBtn.className = "active-touch border-2 border-slate-200 bg-white text-slate-600 p-2 rounded-xl text-center text-xs font-bold transition";
+            } else {
+                roundBtn.className = "active-touch border-2 border-slate-200 bg-white text-slate-600 p-2 rounded-xl text-center text-xs font-bold transition";
+                sharpBtn.className = "active-touch border-2 border-indigo-600 bg-indigo-50 text-indigo-700 p-2 rounded-xl text-center text-xs font-bold transition";
+            }
+            updateAll();
+        }
+
+        // 주제 퀵 예시 불러오기 바인딩
+        function fillTopicPreset(selectElement) {
+            const val = selectElement.value;
+            if (val) {
+                document.getElementById('input-topic').value = val;
+                updateAll();
+            }
+        }
+
+        // 원클릭 프리셋 주입
+        function applyPreset(presetKey) {
+            const data = presets[presetKey];
+            document.getElementById('input-topic').value = data.topic;
+            document.getElementById('input-purpose').value = data.purpose;
+            document.getElementById('input-audience').value = data.audience;
+            document.getElementById('input-length').value = data.length;
+            document.getElementById('input-tone').value = data.tone;
+
+            setVisualFormat(data.visual);
+            setTheme(data.theme);
+            setAccent(data.accent, data.accentName);
+            setEdge(data.edge);
+
+            showToast("프리셋 및 비주얼 세팅 완벽 로드!");
+        }
+
+        // 실시간 업데이트 트리거
+        function updateAll() {
+            generatePromptText();
+        }
+
+        // 마스터 프롬프트 생성 (텍스트 조립 엔진)
+        function generatePromptText() {
+            const topic = document.getElementById('input-topic').value.trim() || "[발표할 PPT 주제를 입력하거나 예시를 불러오세요]";
+            const purpose = document.getElementById('input-purpose').value;
+            const audience = document.getElementById('input-audience').value;
+            const length = document.getElementById('input-length').value;
+            const tone = document.getElementById('input-tone').value;
+
+            const themeObj = themeSpecifications[currentTheme];
+            const visualObj = visualFormatDetails[currentVisualFormat];
+
+            const prompt = `너는 20년 경력의 시각적 프레젠테이션 기획자이자 수석 프롬프트 엔지니어다.
+내가 제시하는 기획 요건과 "디자인 컨셉" 및 "비주얼 레이아웃 사양"에 정확히 정렬되는 완벽한 PPT 설계 기획안을 출력하라.
+
+[1. 기획 핵심 요건]
+- 주제 및 핵심내용: ${topic}
+- 발표 기획의 본질적 목적: ${purpose}
+- 타겟 청중 성향: ${audience}
+- 슬라이드 목표 분량: ${length}
+- 어조 및 전반적 톤앤매너: ${tone}
+
+[2. 비주얼 레이아웃 제약 사양 - 핵심 ⭐]
+- 지정된 출력 포맷: ${visualObj.title}
+- 가독성 처리 규칙: ${visualObj.rule}
+- 텍스트 가독성 최우선 명령: 글자로 빽빽한 일반적인 줄글 형태는 절대 금지한다. 정보의 70% 이상을 상징성 있는 비주얼(차트, 프로세스 화살표 블록, 격자형 요약 카드 등)로 번역하여 독자가 1초 만에 장표를 해독하도록 설계하라.
+
+[3. 디자인 컨셉 명세 사양]
+- 컨셉 테마: ${themeObj.name}
+- 60-30-10 배색 설계: 메인배경색(${themeObj.bgColor}) 60%, 보조글자색(${themeObj.textColor}) 30%, 핵심포인트색(${currentAccent}) 10%
+- 추천 폰트 속성: ${themeObj.font}
+- 구획 레이아웃 스타일: ${currentEdge === 'rounded-xl' ? '모서리가 부드럽게 둥글려진 프레임(border-radius: 12px)' : '완벽한 각이 살아있는 칼날 직각 프레임(border-radius: 0px)'}
+- 색상 접근성 가이드: 본문의 보조글자색은 배경 대비 명도 차이(Contrast Ratio) 4.5:1 이상을 만족하여 모바일이나 노안이 있는 청중도 흐릿하지 않고 선명하게 보이도록 구성하라.
+
+[4. 최종 슬라이드별 출력 템플릿]
+각 슬라이드는 다음 구조로 순차 출력하라:
+- Slide [번호]: [40자 미만의 명확한 제목]
+- 비주얼 레이아웃 형태: [가독성 좋게 시각화할 수 있는 구체적인 구도 형태 기획]
+- 핵심 텍스트 내용: [아이콘 이모지와 수치 중심으로 간결하게 구조화된 정보 요약]
+- 발표용 3줄 스크립트: [실제 강사나 기획자가 청중에게 말하는 듯한 편안한 구어체]
+
+망설임 없이 비주얼 중심의 최고의 결과물을 바로 출력하라.`;
+
+            document.getElementById('prompt-output').textContent = prompt;
+        }
+
+        // 클립보드 복사
+        function copyPrompt() {
+            const text = document.getElementById('prompt-output').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("프롬프트가 복사되었습니다!");
+            }).catch(err => {
+                console.error("복사 실패", err);
+            });
+        }
+
+        // 토스트 표시기
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.querySelector('span').textContent = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2000);
+        }
+
+        // 가상 시뮬레이션 동적 렌더링 엔진
+        function renderSimulation() {
+            const container = document.getElementById('sim-container');
+            container.innerHTML = '';
+
+            const topic = document.getElementById('input-topic').value.trim();
+            if (!topic) {
+                container.innerHTML = `
+                    <div class="text-center py-16 text-slate-400">
+                        <i class="fa-solid fa-face-sad-tear text-4xl mb-3 text-amber-500"></i>
+                        <p class="text-xs font-bold leading-relaxed">기획/디자인 탭에서 주제를<br>선택하거나 직접 작성하시면 즉시 미리보기가 구워집니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const themeObj = themeSpecifications[currentTheme];
+            const edgeStyle = currentEdge === 'rounded-xl' ? '14px' : '0px';
+
+            // 슬라이드 데이터 모의 생성
+            let slides = [
+                {
+                    title: "1단계: 공식 앱 설치 및 원클릭 가입",
+                    desc: "어플 다운로드부터 안전한 연동 로그인까지 10분 완성",
+                    points: ["구글/네이버 계정 연동으로 1초 로그인", "공식 로고 및 사칭 방지 안내 교육", "스마트폰 카메라/마이크 접근 권한 승인 필수"]
+                },
+                {
+                    title: "2단계: 마이크를 이용한 음성 대화 실습",
+                    desc: "스마트폰 자판이 느려도 말만 하면 AI가 대답합니다",
+                    points: ["키보드 🎙️ 버튼을 활용한 텍스트 말로 적기", "🎧 헤드폰 기능 활성화로 실시간 가상면접", "40대 재취업 맞춤형 롤플레잉 프롬프트 실습"]
+                },
+                {
+                    title: "3단계: 1분 만에 끝내는 홍보 이미지 제작",
+                    desc: "나만의 동네 반찬가게 전단지/포스터 완벽 제작",
+                    points: ["무료 고품질 그림 비결: Copilot 이미지 생성", "수채화/따뜻한 일러스트풍의 그림 스타일 지정", "완성된 결과물 스마트폰 갤러리에 직접 저장"]
+                }
+            ];
+
+            // 비주얼 레이아웃 사양에 따라 동적 DOM 구조 변조 렌더링
+            slides.forEach((slide, idx) => {
+                let layoutHtml = '';
+
+                if (currentVisualFormat === 'infographic') {
+                    // 1. 인포그래픽형: 비주얼 3단 격자
+                    layoutHtml = `
+                        <div class="grid grid-cols-3 gap-2 text-center mt-3">
+                            ${slide.points.map((p, i) => `
+                                <div class="p-2.5 bg-white shadow-sm border border-slate-100 flex flex-col items-center justify-between min-h-[100px]" style="border-radius: ${edgeStyle};">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1" style="background-color: ${currentAccent}20; color: ${currentAccent};">
+                                        <i class="fa-solid fa-${i === 0 ? 'shield-halved' : i === 1 ? 'microphone' : 'image'}"></i>
+                                    </div>
+                                    <p class="text-[8px] font-extrabold leading-normal text-slate-700">${p.substring(0,18)}...</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else if (currentVisualFormat === 'table') {
+                    // 2. 비교 분석 표형: 테이블 구성
+                    layoutHtml = `
+                        <div class="overflow-hidden border border-slate-100 bg-white mt-3" style="border-radius: ${edgeStyle};">
+                            <table class="w-full text-left border-collapse text-[8px]">
+                                <tr class="bg-slate-50 border-b border-slate-100">
+                                    <th class="p-1.5 font-bold text-slate-800">주요 체크 항목</th>
+                                    <th class="p-1.5 font-bold text-center text-slate-800">지원 여부</th>
+                                </tr>
+                                ${slide.points.map((p, i) => `
+                                    <tr class="border-b border-slate-100 last:border-b-0">
+                                        <td class="p-1.5 text-slate-600 font-semibold">${p}</td>
+                                        <td class="p-1.5 text-center" style="color: ${currentAccent}; font-size: 10px;">✔️</td>
+                                    </tr>
+                                `).join('')}
+                            </table>
+                        </div>
+                    `;
+                } else if (currentVisualFormat === 'process') {
+                    // 3. 프로세스형: 화살표 타임라인형
+                    layoutHtml = `
+                        <div class="flex items-center gap-2 mt-3 overflow-x-auto py-1">
+                            ${slide.points.map((p, i) => `
+                                <div class="flex-1 min-w-[90px] p-2 bg-white border border-slate-100 shadow-sm relative text-center" style="border-radius: ${edgeStyle};">
+                                    <div class="text-[9px] font-bold" style="color: ${currentAccent}">0${i+1}단계</div>
+                                    <p class="text-[8px] text-slate-600 mt-1 leading-tight">${p.substring(0,14)}...</p>
+                                    ${i < 2 ? `<div class="absolute right-[-6px] top-1/2 -translate-y-1/2 text-slate-300 text-[10px] z-10">➔</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else if (currentVisualFormat === 'card') {
+                    // 4. 요약 카드형: 큰 강조 번호 박스
+                    layoutHtml = `
+                        <div class="grid grid-cols-1 gap-2 mt-3">
+                            ${slide.points.map((p, i) => `
+                                <div class="p-2 bg-white border border-slate-100 shadow-sm flex items-center gap-3" style="border-radius: ${edgeStyle};">
+                                    <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center font-black text-xs" style="background-color: ${currentAccent}; color: #fff; border-radius: ${edgeStyle};">
+                                        0${i+1}
+                                    </div>
+                                    <p class="text-[9px] text-slate-700 font-bold leading-snug">${p}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                // 슬라이드 컨테이너 렌더링
+                const slideEl = `
+                    <div class="slide-entry p-4 shadow-md border border-slate-200/50 relative overflow-hidden transition-all duration-300" 
+                         style="background-color: ${themeObj.bgColor}; border-radius: ${edgeStyle}; ${themeObj.font}">
+                        
+                        <!-- 미니 상단 배지 -->
+                        <span class="absolute top-3 right-3 text-[8px] font-bold px-2 py-0.5 rounded-full" style="background-color: ${currentAccent}15; color: ${currentAccent};">
+                            Slide 0${idx+1}
+                        </span>
+
+                        <!-- 장표 타이틀 -->
+                        <h4 class="text-xs font-black flex items-center gap-1.5" style="color: ${themeObj.textColor};">
+                            <span class="w-1.5 h-3 block" style="background-color: ${currentAccent};"></span>
+                            ${slide.title}
+                        </h4>
+
+                        <!-- 장표 슬로건 -->
+                        <p class="text-[9px] font-semibold italic mt-1.5" style="color: ${currentAccent};">
+                            "${slide.desc}"
+                        </p>
+
+                        <!-- 비주얼 레이아웃 영역 -->
+                        ${layoutHtml}
+
+                        <!-- 대본 스크립트 -->
+                        <div class="mt-3 pt-2.5 border-t border-dashed border-slate-300/40 text-[8px] text-slate-500">
+                            <span class="font-extrabold text-[9px] block mb-0.5 text-indigo-700">🎤 강사 멘트 가이드</span>
+                            "여러분, 스마트폰을 켜시고 여기 보이는 아이콘을 같이 터치해 볼까요? 어렵지 않습니다..."
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += slideEl;
+            });
+        }
+
+        // 초기 앱 마운트
+        window.onload = function() {
+            applyPreset('ai_edu');
+            switchView('inputs');
+        };
+    </script>
+</body>
+</html>
