@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visual PPT Prompt Builder</title>
+<style>
+/* =========================================================
+   1. Design tokens & reset
+========================================================= */
+:root{
+  --primary:#4f46e5;
+  --primary-2:#2563eb;
+  --primary-soft:#eef2ff;
+  --accent:#14b8a6;
+  --bg:#f7f8fc;
+  --surface:#ffffff;
+  --surface-2:#f1f5f9;
+  --text:#172033;
+  --muted:#657089;
+  --line:#dfe5ef;
+  --danger:#dc2626;
+  --success:#15803d;
+  --warning:#b45309;
+  --radius:20px;
+  --shadow:0 16px 40px rgba(30,41,59,.10);
+  --preview-primary:#173b6c;
+  --preview-secondary:#2563eb;
+  --preview-accent:#60a5fa;
+  --preview-bg:#ffffff;
+  --preview-text:#111827;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(79,70,229,.10), transparent 26%),
+    radial-gradient(circle at 100% 10%, rgba(37,99,235,.08), transparent 30%),
+    var(--bg);
+  min-height:100vh;
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid rgba(37,99,235,.32);
+  outline-offset:2px;
+}
+.hidden{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* =========================================================
+   2. Header & navigation
+========================================================= */
+.app-header{
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(14px);
+  background:rgba(247,248,252,.88);
+  border-bottom:1px solid rgba(223,229,239,.9);
+}
+.header-inner{max-width:1540px;margin:auto;padding:14px 22px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:12px;min-width:max-content}
+.brand-mark{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:grid;place-items:center;color:white;box-shadow:0 8px 20px rgba(79,70,229,.28)}
+.brand h1{font-size:17px;margin:0}.brand p{font-size:12px;margin:2px 0 0;color:var(--muted)}
+.progress-wrap{flex:1;min-width:220px}
+.progress-top{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
+.progress{height:8px;background:#e8edf5;border-radius:999px;overflow:hidden}
+.progress-bar{height:100%;width:10%;background:linear-gradient(90deg,var(--primary),var(--primary-2));border-radius:inherit;transition:width .25s ease}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--text);padding:10px 14px;border-radius:12px;font-weight:700;min-height:42px;transition:.2s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(15,23,42,.08)}
+.btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:white;border-color:transparent}
+.btn.soft{background:var(--primary-soft);color:var(--primary);border-color:transparent}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.small{padding:7px 10px;min-height:34px;font-size:13px}
+.icon-btn{width:42px;height:42px;padding:0;display:grid;place-items:center}
+
+/* =========================================================
+   3. Main layout
+========================================================= */
+.app-shell{max-width:1540px;margin:auto;padding:22px;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(430px,.88fr);gap:22px;align-items:start}
+.panel{background:rgba(255,255,255,.92);border:1px solid rgba(223,229,239,.95);border-radius:var(--radius);box-shadow:var(--shadow)}
+.form-panel{padding:22px;min-height:720px}
+.preview-panel{position:sticky;top:94px;overflow:hidden}
+.privacy-banner{display:flex;gap:10px;align-items:flex-start;padding:13px 15px;border-radius:15px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0;margin-bottom:18px;font-size:13px}
+.step-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}
+.step-kicker{color:var(--primary);font-size:13px;font-weight:800;margin-bottom:6px}
+.step-head h2{margin:0;font-size:30px;letter-spacing:-.03em}.step-head p{margin:8px 0 0;color:var(--muted);line-height:1.6}
+.mode-toggle{display:flex;padding:4px;background:var(--surface-2);border-radius:12px;min-width:max-content}
+.mode-toggle button{border:0;background:transparent;padding:8px 12px;border-radius:9px;font-weight:800;color:var(--muted)}
+.mode-toggle button.active{background:white;color:var(--primary);box-shadow:0 4px 12px rgba(15,23,42,.08)}
+
+/* =========================================================
+   4. Form components
+========================================================= */
+.section-block{margin-top:24px}.section-title{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 0 12px}.section-title small{color:var(--muted);font-weight:500;font-size:12px}
+.grid{display:grid;gap:12px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.choice-card,.choice-chip,.template-card,.palette-card,.mini-card{
+  border:1px solid var(--line);background:white;border-radius:16px;transition:.2s ease;position:relative;
+}
+.choice-card{padding:16px;min-height:126px}.choice-card:hover,.template-card:hover,.palette-card:hover,.mini-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(30,41,59,.08)}
+.choice-card.selected,.choice-chip.selected,.template-card.selected,.palette-card.selected,.mini-card.selected{border-color:var(--primary);background:linear-gradient(180deg,#fff,var(--primary-soft));box-shadow:0 0 0 2px rgba(79,70,229,.10)}
+.choice-card input,.choice-chip input,.palette-card input,.mini-card input{position:absolute;opacity:0;pointer-events:none}
+.choice-card h3{font-size:16px;margin:2px 0 8px}.choice-card p{font-size:12px;color:var(--muted);line-height:1.45;margin:0}.choice-card .examples{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}.tag{font-size:11px;padding:4px 7px;border-radius:999px;background:var(--surface-2);color:#475569}
+.choice-chip{display:inline-flex;align-items:center;gap:7px;padding:10px 12px;font-weight:700;font-size:14px;min-height:44px}.chips{display:flex;flex-wrap:wrap;gap:8px}
+.recommended::after{content:"추천";position:absolute;right:10px;top:10px;font-size:10px;font-weight:900;color:white;background:var(--primary);padding:4px 6px;border-radius:999px}
+.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:13px;font-weight:800}.field .hint{font-size:12px;color:var(--muted);line-height:1.5}.required{color:var(--danger)}
+input[type="text"],input[type="number"],input[type="url"],textarea,select{
+  width:100%;border:1px solid var(--line);background:white;color:var(--text);border-radius:12px;padding:12px 13px;min-height:46px;transition:.2s ease
+}
+textarea{min-height:92px;resize:vertical;line-height:1.55}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.10);outline:none}
+.field-error{font-size:12px;color:var(--danger);display:none}.field.invalid .field-error{display:block}.field.invalid input,.field.invalid textarea{border-color:var(--danger)}
+.help-box{padding:14px;border-radius:14px;background:#f8fafc;border:1px dashed #cbd5e1;font-size:13px;color:#475569;line-height:1.55}
+.range-row{display:grid;grid-template-columns:130px 1fr 66px;gap:12px;align-items:center;margin:10px 0}.range-row input[type="range"]{width:100%}
+.range-value{text-align:center;background:var(--surface-2);padding:7px;border-radius:9px;font-weight:800;font-size:12px}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--line);padding:13px 14px;border-radius:14px;background:#fff}
+.switch{position:relative;width:48px;height:28px;flex:0 0 auto}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;transition:.2s}.slider:before{content:"";position:absolute;width:20px;height:20px;left:4px;top:4px;background:white;border-radius:50%;transition:.2s;box-shadow:0 2px 5px rgba(0,0,0,.2)}.switch input:checked+.slider{background:var(--primary)}.switch input:checked+.slider:before{transform:translateX(20px)}
+
+
+.practice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.practice-card{border:1px solid var(--line);background:linear-gradient(180deg,#fff,#f8fafc);border-radius:16px;padding:15px;text-align:left;min-height:150px;transition:.2s ease;position:relative}
+.practice-card:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:0 10px 24px rgba(30,41,59,.08)}
+.practice-card h4{margin:8px 0 7px;font-size:16px}.practice-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}.practice-meta{display:flex;gap:6px;flex-wrap:wrap}.practice-badge{font-size:11px;font-weight:800;padding:4px 7px;border-radius:999px;background:var(--primary-soft);color:var(--primary)}.practice-action{display:inline-flex;margin-top:12px;color:var(--primary);font-size:12px;font-weight:900}
+
+/* =========================================================
+   5. Specialized cards
+========================================================= */
+.template-card{padding:14px;display:flex;gap:10px;align-items:center;font-weight:800;min-height:58px}.template-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--primary-soft);color:var(--primary)}
+.structure-card{padding:15px}.structure-card strong{display:block;margin-bottom:6px}.structure-card span{font-size:12px;color:var(--muted);line-height:1.45}
+.concept-preview{height:72px;border-radius:12px;margin-bottom:12px;position:relative;overflow:hidden;background:#eef2ff}.concept-preview:before,.concept-preview:after{content:"";position:absolute;border-radius:10px;background:white;box-shadow:0 5px 14px rgba(15,23,42,.12)}.concept-preview:before{left:10px;top:10px;width:52%;height:52px}.concept-preview:after{right:10px;top:10px;width:29%;height:24px}
+.preview-minimal{background:linear-gradient(135deg,#f8fafc,#e2e8f0)}.preview-trendy{background:linear-gradient(135deg,#fdf2f8,#ede9fe)}.preview-warm{background:linear-gradient(135deg,#fff7ed,#fef3c7)}.preview-tech{background:linear-gradient(135deg,#0f172a,#312e81)}.preview-tech:before,.preview-tech:after{background:rgba(255,255,255,.15);box-shadow:none}.preview-dark{background:linear-gradient(135deg,#111827,#334155)}.preview-dark:before,.preview-dark:after{background:#475569}.preview-bento:before{width:42%;height:24px}.preview-bento:after{height:52px}
+.palette-card{padding:14px}.swatches{display:flex;height:34px;border-radius:10px;overflow:hidden;margin-bottom:10px}.swatch{flex:1}.palette-card h4{margin:0 0 5px}.palette-card p{font-size:11px;color:var(--muted);margin:0}.palette-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;font-size:11px;color:#475569}.color-editor{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.color-field{border:1px solid var(--line);padding:10px;border-radius:12px;background:white}.color-field input[type="color"]{width:100%;height:38px;border:0;background:transparent}.color-field span{display:block;font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
+.ratio-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ratio-card{padding:12px;border:1px solid var(--line);border-radius:14px;background:white}.ratio-card strong{font-size:13px}.ratio-bar{height:10px;display:flex;border-radius:999px;overflow:hidden;margin:8px 0}.ratio-bar i{display:block;height:100%}.ratio-card small{color:var(--muted);line-height:1.4}
+
+/* =========================================================
+   6. Preview panel
+========================================================= */
+.preview-tabs{display:flex;gap:4px;padding:12px 12px 0;overflow-x:auto;background:#fbfcfe;border-bottom:1px solid var(--line)}
+.preview-tabs button{white-space:nowrap;border:0;background:transparent;padding:10px 12px;border-radius:10px 10px 0 0;color:var(--muted);font-weight:800;font-size:12px}.preview-tabs button.active{background:white;color:var(--primary);box-shadow:0 -2px 10px rgba(15,23,42,.05)}
+.preview-content{padding:18px;max-height:calc(100vh - 170px);overflow:auto}
+.preview-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.preview-toolbar h3{margin:0;font-size:16px}.preview-actions{display:flex;gap:6px;flex-wrap:wrap}
+.prompt-output{white-space:pre-wrap;font-family:"SFMono-Regular",Consolas,monospace;font-size:12px;line-height:1.65;background:#0f172a;color:#dbeafe;border-radius:16px;padding:16px;min-height:320px;overflow:auto}
+.slide-mini-preview{margin-top:16px;border-radius:16px;padding:18px;background:var(--preview-bg);color:var(--preview-text);border:1px solid var(--line);box-shadow:0 10px 24px rgba(15,23,42,.08)}
+.slide-canvas{aspect-ratio:16/9;border-radius:13px;padding:18px;background:linear-gradient(135deg,var(--preview-bg),color-mix(in srgb,var(--preview-secondary) 8%, var(--preview-bg)));display:grid;grid-template-columns:1.2fr .8fr;gap:14px;overflow:hidden;position:relative}
+.slide-canvas h4{font-size:20px;margin:0 0 8px;color:var(--preview-primary)}.slide-canvas p{font-size:11px;line-height:1.45;margin:0;color:var(--preview-text)}
+.fake-chart{display:flex;align-items:flex-end;gap:7px;padding:12px;border-radius:12px;background:rgba(255,255,255,.8);height:100%}.fake-chart i{flex:1;background:linear-gradient(180deg,var(--preview-accent),var(--preview-primary));border-radius:7px 7px 2px 2px}.fake-card{margin-top:12px;padding:10px;border-left:4px solid var(--preview-accent);background:rgba(255,255,255,.75);border-radius:8px;font-size:10px}
+.result-card{border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden;background:white}.result-card header{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:13px 14px;background:#f8fafc}.result-card header h4{margin:0}.result-card .body{padding:14px;white-space:pre-wrap;font-size:13px;line-height:1.6}
+
+/* =========================================================
+   7. Footer navigation, mobile tabs, toast
+========================================================= */
+.bottom-nav{position:sticky;bottom:0;z-index:40;display:flex;justify-content:space-between;gap:12px;padding:14px 22px;background:rgba(247,248,252,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.bottom-nav .right{display:flex;gap:10px}
+.mobile-tabs{display:none;position:sticky;top:69px;z-index:45;background:white;border-bottom:1px solid var(--line);padding:8px}.mobile-tabs button{width:50%;border:0;padding:10px;border-radius:10px;background:transparent;font-weight:800;color:var(--muted)}.mobile-tabs button.active{background:var(--primary-soft);color:var(--primary)}
+.toast{position:fixed;right:22px;bottom:88px;z-index:100;background:#111827;color:white;padding:12px 15px;border-radius:12px;box-shadow:var(--shadow);opacity:0;transform:translateY(12px);pointer-events:none;transition:.25s}.toast.show{opacity:1;transform:none}
+.modal{position:fixed;inset:0;z-index:90;background:rgba(15,23,42,.55);display:grid;place-items:center;padding:20px}.modal-card{width:min(760px,100%);max-height:86vh;overflow:auto;background:white;border-radius:20px;padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.25)}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal textarea{min-height:360px;font-family:monospace;font-size:12px}
+
+/* =========================================================
+   8. Responsive
+========================================================= */
+@media (max-width:1100px){
+  .app-shell{grid-template-columns:1fr}.preview-panel{position:relative;top:auto}.preview-content{max-height:none}.grid.four{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:720px){
+  .practice-grid{grid-template-columns:1fr}
+  .header-inner{padding:10px 12px}.brand p,.header-actions .label,.progress-top span:first-child{display:none}.brand h1{font-size:14px}.brand-mark{width:36px;height:36px}.header-actions{gap:4px}.btn{padding:10px 11px}.app-shell{padding:10px;display:block}.form-panel{padding:16px;border-radius:16px}.preview-panel{border-radius:16px}.mobile-tabs{display:flex}.preview-panel.mobile-hidden,.form-panel.mobile-hidden{display:none}.step-head{display:block}.mode-toggle{margin-top:14px;width:max-content}.step-head h2{font-size:25px}.grid.two,.grid.three,.grid.four,.ratio-presets,.color-editor{grid-template-columns:1fr}.choice-card{min-height:auto}.range-row{grid-template-columns:1fr 60px}.range-row label{grid-column:1/-1}.bottom-nav{padding:10px 12px}.bottom-nav .right{flex:1}.bottom-nav .right .btn{flex:1}.bottom-nav>.btn{min-width:88px}.preview-content{padding:12px}.slide-canvas{padding:12px}.slide-canvas h4{font-size:15px}}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">✦</div>
+      <div><h1>Visual PPT Prompt Builder</h1><p>PPT를 몰라도 시각적인 AI 프롬프트 완성</p></div>
+    </div>
+    <div class="progress-wrap" aria-label="진행 상황">
+      <div class="progress-top"><span id="stepLabel">1. 사용자 유형</span><span id="stepCount">1 / 10</span></div>
+      <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn small" id="sampleBtn" title="샘플 설정 불러오기">✨ <span class="label">샘플</span></button>
+      <button class="btn small" id="randomBtn" title="랜덤 추천">🎲 <span class="label">랜덤</span></button>
+      <button class="btn small danger" id="resetBtn" title="전체 초기화">↺ <span class="label">초기화</span></button>
+    </div>
+  </div>
+</header>
+<div class="mobile-tabs" role="tablist" aria-label="모바일 화면 전환">
+  <button class="active" data-mobile-tab="form">입력</button>
+  <button data-mobile-tab="preview">미리보기</button>
+</div>
+
+<main class="app-shell">
+  <section class="panel form-panel" id="formPanel">
+    <div class="privacy-banner"><span>🔒</span><div><strong>안심하고 작성하세요.</strong><br>입력한 내용은 이 브라우저 안에만 저장되며 외부 서버로 전송되지 않습니다.</div></div>
+
+    <!-- Step 1 -->
+    <section class="step" data-step="1">
+      <div class="step-head"><div><div class="step-kicker">STEP 1</div><h2>어떤 상황에서 PPT를 만드나요?</h2><p>가장 가까운 유형을 고르면 자주 쓰는 발표 목적과 구성을 먼저 추천합니다.</p></div><div class="mode-toggle"><button data-mode="beginner" class="active">초보자</button><button data-mode="advanced">고급</button></div></div>
+      <div class="grid three" id="userTypeGrid"></div>
+      <div class="section-block"><h3 class="section-title">빠른 템플릿 <small>선택하면 관련 설정을 자동으로 채웁니다.</small></h3><div class="grid three" id="templateGrid"></div></div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="step hidden" data-step="2">
+      <div class="step-head"><div><div class="step-kicker">STEP 2</div><h2>PPT의 목적은 무엇인가요?</h2><p>사용자 유형에 맞는 추천 목적을 앞쪽에 표시합니다.</p></div></div>
+      <div class="chips" id="purposeChips"></div>
+      <div class="section-block field"><label for="customPurpose">목록에 없는 목적</label><input id="customPurpose" type="text" placeholder="예: 사내 해커톤 아이디어 발표" /><div class="hint">선택한 목적보다 이 입력값이 우선 적용됩니다.</div></div>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="step hidden" data-step="3">
+      <div class="step-head"><div><div class="step-kicker">STEP 3</div><h2>발표의 기본 정보를 알려주세요</h2><p>모르는 항목은 비워 두어도 AI가 목적에 맞춰 제안하도록 지시합니다.</p></div></div>
+      <div class="section-block practice-section" aria-labelledby="practiceExamplesTitle">
+        <h3 class="section-title" id="practiceExamplesTitle">한 번에 체험하는 실습 예시 <small>카드를 누르면 아래 기본 정보가 자동으로 채워집니다.</small></h3>
+        <div class="practice-grid" id="practiceExampleGrid"></div>
+      </div>
+      <div class="grid two">
+        <div class="field required-field"><label for="title">발표 제목 <span class="required">필수</span></label><input id="title" data-key="title" type="text" placeholder="예: 데이터로 만든 마케팅 성과"/><div class="field-error">발표 제목을 입력해 주세요.</div></div>
+        <div class="field"><label for="topic">발표 주제</label><input id="topic" data-key="topic" type="text" placeholder="예: 마케팅 프로젝트 경험과 문제 해결 능력"/></div>
+        <div class="field"><label for="goal">발표 목적</label><textarea id="goal" data-key="goal" placeholder="예: 직무 적합성과 실행력을 설득하고 싶어요."></textarea></div>
+        <div class="field"><label for="audience">발표를 듣는 사람</label><input id="audience" data-key="audience" type="text" placeholder="예: 마케팅 팀장과 실무 면접관"/></div>
+        <div class="field"><label for="duration">발표 시간</label><select id="duration" data-key="duration"><option>3분</option><option selected>5분</option><option>10분</option><option>15분</option><option>20분</option><option>30분 이상</option><option>잘 모르겠어요</option></select></div>
+        <div class="field"><label for="slideCount">원하는 슬라이드 수</label><input id="slideCount" data-key="slideCount" type="number" min="3" max="50" value="7"/></div>
+        <div class="field"><label for="coreMessage">전달하고 싶은 핵심 메시지</label><textarea id="coreMessage" data-key="coreMessage" placeholder="예: 데이터를 활용해 문제를 발견하고 실제 성과로 연결한 경험이 있습니다."></textarea></div>
+        <div class="field"><label for="cta">발표 후 청중이 취해야 할 행동</label><textarea id="cta" data-key="cta" placeholder="예: 다음 면접 단계에서 제 역량을 더 확인해 주세요."></textarea></div>
+        <div class="field"><label for="mustInclude">반드시 포함할 내용</label><textarea id="mustInclude" data-key="mustInclude" placeholder="예: 문제 정의, 데이터 분석, 실행 과정, 성과 수치"></textarea></div>
+        <div class="field"><label for="exclude">제외할 내용</label><textarea id="exclude" data-key="exclude" placeholder="예: 개인 연락처, 기밀 데이터, 과도한 자기소개"></textarea></div>
+        <div class="field"><label for="assets">보유한 자료</label><textarea id="assets" data-key="assets" placeholder="예: 프로젝트 캡처, 설문 결과, 전환율 데이터, 로고"></textarea></div>
+        <div class="field"><label for="references">참고 링크 또는 메모</label><textarea id="references" data-key="references" placeholder="링크나 메모를 붙여 넣으세요. 외부로 전송되지 않습니다."></textarea></div>
+      </div>
+    </section>
+
+    <!-- Step 4 -->
+    <section class="step hidden" data-step="4">
+      <div class="step-head"><div><div class="step-kicker">STEP 4</div><h2>어떤 흐름으로 이야기할까요?</h2><p>발표 목적에 어울리는 구성 방식을 선택하세요.</p></div></div>
+      <div class="grid two" id="structureGrid"></div>
+      <div class="section-block field"><label for="customStructure">직접 구성 입력</label><input id="customStructure" data-key="customStructure" type="text" placeholder="예: 문제 → 분석 → 실행 → 성과 → 배운 점"/></div>
+    </section>
+
+    <!-- Step 5 -->
+    <section class="step hidden" data-step="5">
+      <div class="step-head"><div><div class="step-kicker">STEP 5</div><h2>어떤 시각 요소를 사용할까요?</h2><p>여러 개를 선택할 수 있습니다. 목적에 맞는 항목은 추천 표시됩니다.</p></div></div>
+      <div class="chips" id="visualChips"></div>
+      <div class="section-block"><h3 class="section-title">시각 요소 비율</h3><div class="ratio-presets" id="ratioPresets"></div><div id="ratioSliders"></div></div>
+      <div class="section-block"><h3 class="section-title">텍스트 분량 제한</h3><div class="chips" id="textDensityChips"></div><div class="grid two" style="margin-top:14px">
+        <div class="field"><label>한 슬라이드 최대 글자 수</label><input type="number" data-key="maxCharsSlide" value="180" min="40" max="1000"></div>
+        <div class="field"><label>한 줄 최대 글자 수</label><input type="number" data-key="maxCharsLine" value="25" min="10" max="80"></div>
+        <div class="field"><label>본문 최대 줄 수</label><input type="number" data-key="maxBodyLines" value="3" min="1" max="12"></div>
+        <div class="field"><label>불릿 최대 개수</label><input type="number" data-key="maxBullets" value="4" min="1" max="10"></div>
+        <div class="field"><label>제목 최대 글자 수</label><input type="number" data-key="maxTitleChars" value="20" min="8" max="60"></div>
+      </div></div>
+    </section>
+
+    <!-- Step 6 -->
+    <section class="step hidden" data-step="6">
+      <div class="step-head"><div><div class="step-kicker">STEP 6</div><h2>원하는 디자인 느낌을 골라주세요</h2><p>느낌 중심 표현과 상세 스타일을 함께 선택할 수 있습니다.</p></div></div>
+      <h3 class="section-title">느낌 중심 콘셉트</h3><div class="grid three" id="conceptGrid"></div>
+      <div class="section-block"><h3 class="section-title">상세 스타일</h3><div class="chips" id="styleChips"></div></div>
+      <div class="section-block"><h3 class="section-title">레이아웃</h3><div class="chips" id="layoutChips"></div></div>
+    </section>
+
+    <!-- Step 7 -->
+    <section class="step hidden" data-step="7">
+      <div class="step-head"><div><div class="step-kicker">STEP 7</div><h2>색상 팔레트를 선택하세요</h2><p>목적과 콘셉트에 맞춰 추천하며 직접 수정할 수 있습니다.</p></div></div>
+      <div class="grid two" id="paletteGrid"></div>
+      <div class="section-block"><div class="chips"><button class="btn soft small" id="recommendPalette">팔레트 다시 추천</button><button class="btn small" id="randomPalette">랜덤 팔레트</button></div></div>
+      <div class="section-block"><h3 class="section-title">직접 색상 조정</h3><div class="color-editor" id="colorEditor"></div></div>
+      <div class="section-block grid two" id="accessibilityOptions"></div>
+    </section>
+
+    <!-- Step 8 -->
+    <section class="step hidden" data-step="8">
+      <div class="step-head"><div><div class="step-kicker">STEP 8</div><h2>이미지, 아이콘, 캐릭터를 설정하세요</h2><p>전체 PPT에서 같은 스타일을 유지하도록 프롬프트에 반영합니다.</p></div></div>
+      <h3 class="section-title">이미지 스타일</h3><div class="chips" id="imageStyleChips"></div>
+      <div class="section-block"><h3 class="section-title">아이콘 스타일</h3><div class="chips" id="iconStyleChips"></div></div>
+      <div class="section-block"><h3 class="section-title">캐릭터 사용 여부</h3><div class="chips" id="characterUseChips"></div></div>
+      <div id="characterSettings" class="section-block hidden">
+        <div class="grid two">
+          <div class="field"><label>캐릭터 종류</label><select data-key="characterType" id="characterType"></select></div>
+          <div class="field"><label>캐릭터 스타일</label><select data-key="characterStyle" id="characterStyle"></select></div>
+          <div class="field"><label>캐릭터 역할</label><select data-key="characterRole" id="characterRole"></select></div>
+          <div class="field"><label>기본 감정</label><select data-key="characterEmotion" id="characterEmotion"></select></div>
+          <div class="field"><label>배치 위치</label><select data-key="characterPosition" id="characterPosition"></select></div>
+          <div class="field"><label>캐릭터 크기</label><select data-key="characterSize"><option>작게</option><option selected>보통</option><option>크게</option></select></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label for="characterReference">좋아하는 캐릭터나 분위기 참고</label><input id="characterReference" data-key="characterReference" type="text" placeholder="예: 산리오처럼 귀엽고 부드러운 느낌"/><div class="hint">유명 캐릭터 이름은 둥근 형태, 파스텔 색상 등 일반적인 시각 특징으로 변환됩니다.</div></div>
+      </div>
+    </section>
+
+    <!-- Step 9 -->
+    <section class="step hidden" data-step="9">
+      <div class="step-head"><div><div class="step-kicker">STEP 9</div><h2>마지막 세부 설정을 확인하세요</h2><p>초보자 모드에는 꼭 필요한 설정만, 고급 모드에는 세밀한 옵션을 표시합니다.</p></div></div>
+      <h3 class="section-title">데이터와 차트</h3><div class="grid two" id="dataOptions"></div>
+      <div class="section-block field"><label>차트 스타일</label><select data-key="chartStyle" id="chartStyle"></select></div>
+      <div class="advanced-only hidden">
+        <div class="section-block"><h3 class="section-title">고급 디자인 및 출력 설정</h3><div class="grid two" id="advancedFields"></div></div>
+      </div>
+    </section>
+
+    <!-- Step 10 -->
+    <section class="step hidden" data-step="10">
+      <div class="step-head"><div><div class="step-kicker">STEP 10</div><h2>완성된 프롬프트를 확인하세요</h2><p>AI 도구에 바로 붙여 넣거나 파일로 저장할 수 있습니다.</p></div></div>
+      <div class="grid two">
+        <button class="btn primary" id="copyAllFinal">전체 프롬프트 복사</button>
+        <button class="btn" id="downloadTxt">텍스트 파일 다운로드</button>
+        <button class="btn" id="downloadMd">Markdown 다운로드</button>
+        <button class="btn" id="exportJson">설정 JSON 내보내기</button>
+        <button class="btn" id="importJsonBtn">설정 JSON 불러오기</button>
+        <button class="btn" id="shareStateBtn">링크 공유용 상태 저장</button>
+        <input id="importJsonInput" class="hidden" type="file" accept="application/json,.json" />
+      </div>
+      <div class="section-block" id="finalCards"></div>
+    </section>
+  </section>
+
+  <aside class="panel preview-panel" id="previewPanel" aria-live="polite">
+    <div class="preview-tabs" id="previewTabs"></div>
+    <div class="preview-content">
+      <div class="preview-toolbar"><h3 id="previewTitle">전체 프롬프트</h3><div class="preview-actions"><button class="btn small" id="togglePromptLength">짧게 보기</button><button class="btn small primary" id="copyCurrent">복사</button></div></div>
+      <pre class="prompt-output" id="promptOutput"></pre>
+      <div class="slide-mini-preview">
+        <div class="slide-canvas">
+          <div><h4 id="miniTitle">데이터로 성과를 만들었습니다</h4><p id="miniBody">짧은 핵심 문장과 시각 요소 중심으로 내용을 구성합니다.</p><div class="fake-card" id="miniCard">핵심 수치 3개 · 본문 3줄 이내</div></div>
+          <div class="fake-chart"><i style="height:34%"></i><i style="height:58%"></i><i style="height:82%"></i><i style="height:68%"></i></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<nav class="bottom-nav" aria-label="단계 이동">
+  <button class="btn" id="prevBtn">← 이전</button>
+  <div class="right"><button class="btn soft" id="saveBtn">현재 설정 저장</button><button class="btn primary" id="nextBtn">다음 단계 →</button></div>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<div class="modal hidden" id="shareModal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+  <div class="modal-card"><div class="modal-head"><h3 id="shareTitle">공유용 상태 문자열</h3><button class="btn icon-btn" id="closeModal" aria-label="닫기">✕</button></div><p class="help-box">아래 문자열을 복사해 다른 사람에게 전달하세요. 이 앱의 “설정 JSON 불러오기”와 동일한 데이터를 담고 있습니다.</p><textarea id="shareText" readonly></textarea><button class="btn primary" id="copyShare">복사</button></div>
+</div>
+
+<script>
+/* =========================================================
+   1. Static data
+========================================================= */
+const DATA = {
+  userTypes:[
+    ['취업준비생',['면접 발표','직무 과제','자기소개','취업 포트폴리오']],['대학생',['과제 발표','공모전','팀 프로젝트','졸업 발표']],['재직자',['업무 보고','프로젝트 결과 보고','기획안','회의 자료']],['프리랜서',['제안서','포트폴리오','클라이언트 보고','서비스 소개']],['창업 준비자',['사업계획서','투자 피치덱','서비스 소개서','시장 분석']],['청년 활동가',['캠페인 소개','성과 보고','교육자료','커뮤니티 제안']],['기타',['자유 주제','개인 프로젝트','행사 소개','AI 추천']]
+  ],
+  purposes:['자기소개','취업 포트폴리오','면접 발표','직무 과제','프로젝트 결과 보고','업무 보고','사업 제안서','서비스 기획서','제품 소개','영업 제안','강의 및 교육자료','공모전 발표','창업 피치덱','투자 제안','자유 주제','AI 추천','잘 모르겠어요','목적에 맞게 자동 선택'],
+  purposePriority:{
+    '취업준비생':['면접 발표','취업 포트폴리오','자기소개','직무 과제'],
+    '대학생':['공모전 발표','강의 및 교육자료','프로젝트 결과 보고','자기소개'],
+    '재직자':['업무 보고','프로젝트 결과 보고','서비스 기획서','사업 제안서'],
+    '프리랜서':['영업 제안','서비스 기획서','취업 포트폴리오','제품 소개'],
+    '창업 준비자':['창업 피치덱','투자 제안','사업 제안서','제품 소개'],
+    '청년 활동가':['강의 및 교육자료','공모전 발표','프로젝트 결과 보고','사업 제안서']
+  },
+  templates:['취업 포트폴리오','면접 발표','자기소개','직무 과제','프로젝트 결과 보고','주간 업무 보고','회사 기획안','사업 제안서','영업 제안서','강의 자료','공모전 발표','창업 피치덱','투자 제안서','서비스 소개서'],
+  structures:[
+    ['문제 → 해결 → 기대효과','문제 해결형 제안서와 기획안'],['배경 → 분석 → 제안','논리적인 보고와 의사결정 자료'],['목표 → 실행 → 결과','프로젝트 성과와 업무 보고'],['경험 → 역할 → 성과 → 배운 점','면접 발표와 포트폴리오'],['현재 상황 → 문제점 → 개선안','업무 개선안과 컨설팅 자료'],['과거 → 현재 → 미래','비전과 변화 과정을 보여줄 때'],['질문 → 근거 → 결론','짧고 설득력 있는 발표'],['데이터 중심 구성','수치와 근거가 중요한 보고'],['스토리텔링 구성','청중의 몰입과 공감을 만들 때'],['포트폴리오 구성','프로젝트 사례와 역량을 보여줄 때'],['AI 자동 추천','목적에 맞춰 AI가 구조를 선택']
+  ],
+  visuals:['표','비교표','막대그래프','선그래프','원형그래프','도넛차트','타임라인','프로세스 다이어그램','순환 구조','퍼널','피라미드','매트릭스','SWOT','로드맵','조직도','마인드맵','플로우차트','트리 구조','KPI 대시보드','간트차트','버블 다이어그램','벤다이어그램','비즈니스 모델 캔버스','아이콘 인포그래픽','숫자 강조 카드','전후 비교','단계별 체크리스트','레이더 차트','AI 자동 추천'],
+  visualRecommendations:{
+    '창업 피치덱':['비교표','막대그래프','비즈니스 모델 캔버스','로드맵','선그래프','도넛차트'],
+    '투자 제안':['막대그래프','선그래프','도넛차트','로드맵','KPI 대시보드'],
+    '취업 포트폴리오':['타임라인','프로세스 다이어그램','숫자 강조 카드','전후 비교','레이더 차트','아이콘 인포그래픽'],
+    '면접 발표':['타임라인','프로세스 다이어그램','숫자 강조 카드','전후 비교'],
+    '프로젝트 결과 보고':['KPI 대시보드','타임라인','막대그래프','전후 비교','프로세스 다이어그램'],
+    '업무 보고':['KPI 대시보드','표','막대그래프','간트차트','단계별 체크리스트'],
+    '서비스 기획서':['플로우차트','퍼널','로드맵','매트릭스','아이콘 인포그래픽'],
+    '강의 및 교육자료':['아이콘 인포그래픽','단계별 체크리스트','마인드맵','타임라인']
+  },
+  concepts:['깔끔하고 신뢰감 있게','전문적이고 논리적으로','젊고 트렌디하게','따뜻하고 친근하게','창의적이고 개성 있게','강렬하고 설득력 있게','차분하고 고급스럽게','기술적이고 미래지향적으로','밝고 긍정적으로','심플하고 집중도 높게'],
+  styles:['미니멀','모던 비즈니스','에디토리얼','벤토 그리드','소프트 그라데이션','글래스모피즘','다크 프리미엄','데이터 대시보드','스타트업 피치덱','컨설팅 보고서','포트폴리오 스타일','스칸디나비안','네오 브루탈리즘','클레이 스타일','미래 기술 스타일','AI 추천'],
+  layouts:['큰 제목 중심','이미지 중심','좌우 분할','상하 분할','카드형','벤토 그리드','풀스크린 이미지','숫자 강조','차트 중심','표 중심','타임라인 중심','인포그래픽 중심','보고서형','포트폴리오형','자동 추천'],
+  palettes:[
+    {name:'신뢰와 전문성',colors:['#173B6C','#2563EB','#60A5FA','#FFFFFF','#111827'],use:'업무 보고, 면접, 제안서',ratio:'대표 45% · 보조 20% · 강조 10% · 배경 25%'},
+    {name:'성장과 도전',colors:['#14532D','#2DD4BF','#F7F3E8','#FFFFFF','#1F2937'],use:'창업, 성장 전략, 프로젝트',ratio:'대표 40% · 보조 20% · 강조 10% · 배경 30%'},
+    {name:'창의성과 에너지',colors:['#6D28D9','#FB7185','#FACC15','#FFF7ED','#312E81'],use:'공모전, 브랜딩, 캠페인',ratio:'대표 35% · 보조 25% · 강조 15% · 배경 25%'},
+    {name:'차분한 설득',colors:['#1E3A5F','#D6C6AD','#B68D40','#FFFDF7','#243042'],use:'임원 보고, 투자, 제안',ratio:'대표 45% · 보조 20% · 강조 8% · 배경 27%'},
+    {name:'미래 기술',colors:['#09090B','#0EA5E9','#7C3AED','#CBD5E1','#F8FAFC'],use:'AI, 기술, 데이터',ratio:'대표 50% · 보조 20% · 강조 10% · 배경 20%'},
+    {name:'친근한 교육',colors:['#38BDF8','#FACC15','#FFFFFF','#86EFAC','#1E293B'],use:'교육, 강의, 커뮤니티',ratio:'대표 35% · 보조 20% · 강조 10% · 배경 35%'},
+    {name:'취업 포트폴리오',colors:['#172554','#1D4ED8','#93C5FD','#FFFFFF','#111827'],use:'취업 포트폴리오, 면접',ratio:'대표 45% · 보조 20% · 강조 10% · 배경 25%'}
+  ],
+  imageStyles:['실제 사진','스튜디오 사진','다큐멘터리 사진','AI 일러스트','플랫 일러스트','3D','클레이','아이소메트릭','라인 아트','수채화','로우 폴리','미니멀 벡터','글래스 스타일','콜라주','종이 질감','스티커 스타일','웹툰 스타일','픽셀 아트','이미지 사용 안 함','AI 추천'],
+  iconStyles:['아웃라인','채움형','라운드','미니멀','3D','그라데이션','스티커','손그림','아이콘 사용 안 함','AI 추천'],
+  characterTypes:['사람','직장인','취업준비생','대학생','동물','고양이','강아지','곰','토끼','펭귄','여우','로봇','AI 캐릭터','자유 입력'],
+  characterStyles:['귀여운','미니멀','비즈니스','3D','클레이','픽셀','웹툰','스티커','플랫 일러스트','마스코트','손그림'],
+  characterRoles:['발표 내용을 설명','핵심 팁 제공','주의사항 안내','질문 제시','슬라이드 요약','응원 메시지','단계 안내','감정 표현','장식 요소'],
+  emotions:['웃음','고민','놀람','자신감','응원','질문','설명','축하','주의','중립'],
+  positions:['우측 하단','좌측 하단','제목 옆','말풍선과 함께','슬라이드마다 다르게','AI 추천'],
+  chartStyles:['미니멀','보고서형','대시보드형','인포그래픽형','그라데이션','단색','고대비','AI 추천'],
+  practiceExamples:[
+    {name:'자기소개 발표',difficulty:'쉬움',time:'5분',icon:'👋',values:{title:'나를 설명하는 세 가지 키워드',topic:'나의 경험과 강점을 짧게 소개하기',goal:'처음 만난 사람들에게 나를 기억시키기',audience:'교육·워크숍 참여자',duration:'3분',slideCount:5,coreMessage:'저는 호기심을 행동으로 옮기는 사람입니다.',cta:'나의 강점 한 가지를 기억한다',mustInclude:'나를 설명하는 키워드 3개, 짧은 경험 사례, 앞으로 하고 싶은 일',exclude:'지나치게 긴 성장 과정과 개인정보',assets:'나를 보여주는 사진 또는 활동 이미지'}},
+    {name:'불편함 개선 제안',difficulty:'쉬움',time:'10분',icon:'💡',values:{title:'일상 속 불편함을 바꾸는 작은 아이디어',topic:'자주 겪는 문제와 개선 방법 제안',goal:'문제 해결 아이디어를 설득력 있게 전달하기',audience:'같은 조 참여자',duration:'5분',slideCount:6,coreMessage:'작은 변화만으로도 사용 경험을 크게 개선할 수 있습니다.',cta:'제안한 아이디어에 의견을 남긴다',mustInclude:'불편한 상황, 원인, 개선 아이디어, 기대 효과',exclude:'근거 없는 통계와 과도하게 복잡한 기능',assets:'직접 찍은 사진, 간단한 메모 또는 스케치'}},
+    {name:'좋아하는 서비스 소개',difficulty:'보통',time:'10분',icon:'📱',values:{title:'내가 자주 사용하는 앱의 매력',topic:'좋아하는 앱이나 서비스의 장점 분석',goal:'서비스의 핵심 장점을 시각적으로 설명하기',audience:'해당 서비스를 잘 모르는 사람',duration:'5분',slideCount:7,coreMessage:'이 서비스는 복잡한 과정을 쉽게 만들어 줍니다.',cta:'서비스를 직접 사용해 보고 싶게 만든다',mustInclude:'사용 계기, 핵심 기능, 좋은 점, 아쉬운 점, 추천 대상',exclude:'로그인 정보와 개인 사용 기록',assets:'서비스 화면 캡처와 로고'}},
+    {name:'우리 동네 문제 해결',difficulty:'보통',time:'15분',icon:'🏘️',values:{title:'더 살기 좋은 동네를 위한 제안',topic:'지역에서 발견한 문제와 해결 아이디어',goal:'지역 문제에 대한 관심과 참여 유도',audience:'주민 또는 청년 활동가',duration:'7분',slideCount:8,coreMessage:'주민의 작은 참여가 지역의 변화를 만들 수 있습니다.',cta:'해결 아이디어에 참여하거나 의견을 제시한다',mustInclude:'현재 상황, 문제 원인, 해결 아이디어, 참여 방법',exclude:'확인되지 않은 개인 비판과 개인정보',assets:'동네 사진, 관찰 메모, 인터뷰 내용'}}
+  ],
+  previewTabs:['전체 프롬프트','슬라이드 구성안','디자인 지시','시각화 지시','이미지 및 캐릭터 지시','발표자 노트 지시']
+};
+
+const DEFAULT_STATE = {
+  currentStep:1, mode:'beginner', userType:'취업준비생', purpose:'면접 발표', customPurpose:'', title:'', topic:'', goal:'', audience:'', duration:'5분', slideCount:7, coreMessage:'', cta:'', mustInclude:'', exclude:'', assets:'', references:'',
+  structure:'경험 → 역할 → 성과 → 배운 점', customStructure:'', visuals:['타임라인','숫자 강조 카드','프로세스 다이어그램'], ratioPreset:'시각 중심', ratios:{text:20,image:40,chart:20,info:20,space:20}, textDensity:'간결하게', maxCharsSlide:180,maxCharsLine:25,maxBodyLines:3,maxBullets:4,maxTitleChars:20,
+  concept:'깔끔하고 신뢰감 있게', styles:['모던 비즈니스'], layouts:['좌우 분할','카드형','숫자 강조'], palette:'취업 포트폴리오', colors:['#172554','#1D4ED8','#93C5FD','#FFFFFF','#111827'], accessibility:{highContrast:true,printBW:false,projector:true,colorVision:true},
+  imageStyle:'실제 사진', iconStyle:'미니멀', characterUse:'사용 안 함', characterType:'취업준비생', characterStyle:'미니멀', characterRole:'핵심 팁 제공', characterEmotion:'설명', characterPosition:'우측 하단', characterSize:'보통', characterReference:'',
+  dataOptions:{useData:true,needChart:true,needTable:false,highlightNumbers:true,showSources:true,noFakeData:true,usePlaceholders:true,markFactCheck:true}, chartStyle:'미니멀',
+  advanced:{aspectRatio:'16:9',slideSize:'와이드',titleStyle:'결론형',tone:'명확하고 쉬운 한국어',contentDensity:'낮음',margin:'넓게',radius:'중간',shadow:'은은하게',background:'밝은 단색',fontMood:'현대적 산세리프',koFont:'Pretendard 또는 Noto Sans KR',enFont:'Inter 또는 Aptos',bilingual:'사용 안 함',speakerNotes:'포함',script:'별도 프롬프트 제공',questions:'포함',answers:'포함',referencesPage:'필요 시 포함',sources:'표시',anonymize:'적용',brandName:'',brandColors:'',logoPosition:'우측 상단',forbidden:'과장된 표현, 검증되지 않은 수치',requiredPhrases:'',animation:'최소',pageNumber:'표시',toc:'포함',summaryPage:'포함',qaPage:'포함'}
+};
+let state = structuredClone(DEFAULT_STATE);
+let activePreviewTab = 0;
+let shortPrompt = false;
+
+/* =========================================================
+   2. DOM helpers and initialization
+========================================================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function renderStaticUI(){
+  $('#userTypeGrid').innerHTML = DATA.userTypes.map(([name,examples])=>`<label class="choice-card ${name===state.userType?'selected':''}"><input type="radio" name="userType" value="${name}"><h3>${name}</h3><p>${examples[0]}부터 ${examples[examples.length-1]}까지 자주 쓰는 자료를 추천합니다.</p><div class="examples">${examples.map(x=>`<span class="tag">${x}</span>`).join('')}</div></label>`).join('');
+  $('#templateGrid').innerHTML = DATA.templates.map((x,i)=>`<button class="template-card" data-template="${x}"><span class="template-icon">${['◫','◎','✦','✓','↗'][i%5]}</span>${x}</button>`).join('');
+  renderPurposeChips();
+  renderPracticeExamples();
+  $('#structureGrid').innerHTML = DATA.structures.map(([name,desc])=>`<label class="choice-card structure-card ${name===state.structure?'selected':''}"><input type="radio" name="structure" value="${name}"><strong>${name}</strong><span>${desc}</span></label>`).join('');
+  renderMultiChips('#visualChips',DATA.visuals,'visuals');
+  renderRatioPresets(); renderRatioSliders();
+  renderSingleChips('#textDensityChips',['매우 간결하게','간결하게','보통','자세하게','AI 추천'],'textDensity');
+  $('#conceptGrid').innerHTML = DATA.concepts.map((x,i)=>`<label class="choice-card mini-card ${x===state.concept?'selected':''}"><input type="radio" name="concept" value="${x}"><div class="concept-preview ${['preview-minimal','preview-minimal','preview-trendy','preview-warm','preview-bento','preview-dark','preview-dark','preview-tech','preview-warm','preview-minimal'][i]}"></div><strong>${x}</strong><p style="margin-top:6px">${conceptDescription(x)}</p></label>`).join('');
+  renderMultiChips('#styleChips',DATA.styles,'styles'); renderMultiChips('#layoutChips',DATA.layouts,'layouts');
+  renderPalettes(); renderColorEditor(); renderAccessibilityOptions();
+  renderSingleChips('#imageStyleChips',DATA.imageStyles,'imageStyle'); renderSingleChips('#iconStyleChips',DATA.iconStyles,'iconStyle'); renderSingleChips('#characterUseChips',['사용 안 함','사용','AI 추천'],'characterUse');
+  fillSelect('#characterType',DATA.characterTypes,state.characterType); fillSelect('#characterStyle',DATA.characterStyles,state.characterStyle); fillSelect('#characterRole',DATA.characterRoles,state.characterRole); fillSelect('#characterEmotion',DATA.emotions,state.characterEmotion); fillSelect('#characterPosition',DATA.positions,state.characterPosition);
+  renderDataOptions(); fillSelect('#chartStyle',DATA.chartStyles,state.chartStyle); renderAdvancedFields();
+  $('#previewTabs').innerHTML = DATA.previewTabs.map((x,i)=>`<button class="${i===activePreviewTab?'active':''}" data-preview-tab="${i}">${x}</button>`).join('');
+}
+function conceptDescription(x){const m={'깔끔하고 신뢰감 있게':'정돈된 정보와 안정적인 색상','전문적이고 논리적으로':'근거와 구조가 선명한 보고형','젊고 트렌디하게':'경쾌한 컬러와 리듬감 있는 카드','따뜻하고 친근하게':'부드러운 색과 쉬운 설명','창의적이고 개성 있게':'다양한 형태와 과감한 구도','강렬하고 설득력 있게':'큰 숫자와 강한 대비','차분하고 고급스럽게':'절제된 색과 넓은 여백','기술적이고 미래지향적으로':'데이터와 디지털 무드','밝고 긍정적으로':'명랑한 색과 열린 구성','심플하고 집중도 높게':'핵심 한 문장 중심'};return m[x]||'목적에 맞는 시각 스타일';}
+
+function renderPracticeExamples(){
+  const grid=$('#practiceExampleGrid');if(!grid)return;
+  grid.innerHTML=DATA.practiceExamples.map((x,i)=>`<button type="button" class="practice-card" data-practice-example="${i}" aria-label="${x.name} 예시 불러오기"><div class="practice-meta"><span class="practice-badge">${x.icon} ${x.difficulty}</span><span class="practice-badge">예상 ${x.time}</span></div><h4>${x.name}</h4><p>${x.values.topic}<br><strong>핵심:</strong> ${x.values.coreMessage}</p><span class="practice-action">이 예시로 입력하기 →</span></button>`).join('');
+}
+function applyPracticeExample(index){
+  const example=DATA.practiceExamples[Number(index)];if(!example)return;
+  Object.assign(state,example.values);
+  if(example.name==='자기소개 발표'){state.purpose='자기소개';state.structure='스토리텔링 구성';state.visuals=['아이콘 인포그래픽','숫자 강조 카드','타임라인'];}
+  else if(example.name==='불편함 개선 제안'){state.purpose='서비스 기획서';state.structure='문제 → 해결 → 기대효과';state.visuals=['전후 비교','프로세스 다이어그램','아이콘 인포그래픽'];}
+  else if(example.name==='좋아하는 서비스 소개'){state.purpose='제품 소개';state.structure='배경 → 분석 → 제안';state.visuals=['아이콘 인포그래픽','비교표','프로세스 다이어그램'];}
+  else {state.purpose='자유 주제';state.structure='현재 상황 → 문제점 → 개선안';state.visuals=['전후 비교','로드맵','아이콘 인포그래픽'];}
+  syncInputsFromState();renderStaticUI();bindDynamicVisualState();autoSave();toast(`${example.name} 예시를 불러왔습니다.`);
+}
+function fillSelect(sel,items,value){$(sel).innerHTML=items.map(x=>`<option ${x===value?'selected':''}>${x}</option>`).join('')}
+function renderPurposeChips(){const pri=DATA.purposePriority[state.userType]||[];const ordered=[...pri,...DATA.purposes.filter(x=>!pri.includes(x))];$('#purposeChips').innerHTML=ordered.map(x=>`<label class="choice-chip ${x===state.purpose?'selected':''} ${pri.includes(x)?'recommended':''}"><input type="radio" name="purpose" value="${x}">${x}</label>`).join('')}
+function renderMultiChips(sel,items,key){const rec=key==='visuals'?(DATA.visualRecommendations[state.customPurpose||state.purpose]||[]):[];$(sel).innerHTML=items.map(x=>`<label class="choice-chip ${state[key]?.includes(x)?'selected':''} ${rec.includes(x)?'recommended':''}"><input type="checkbox" data-array-key="${key}" value="${x}">${x}</label>`).join('')}
+function renderSingleChips(sel,items,key){$(sel).innerHTML=items.map(x=>`<label class="choice-chip ${state[key]===x?'selected':''}"><input type="radio" name="${key}" data-single-key="${key}" value="${x}">${x}</label>`).join('')}
+function renderRatioPresets(){const presets={
+  '시각 중심':{text:20,image:40,chart:20,info:20,space:20},'균형형':{text:40,image:30,chart:15,info:15,space:18},'보고서형':{text:50,image:15,chart:25,info:10,space:15},'포트폴리오형':{text:25,image:55,chart:5,info:15,space:20}
+};$('#ratioPresets').innerHTML=Object.entries(presets).map(([n,r])=>`<button class="ratio-card ${n===state.ratioPreset?'selected':''}" data-ratio='${JSON.stringify(r)}' data-ratio-name="${n}"><strong>${n}</strong><div class="ratio-bar"><i style="width:${r.text}%;background:#64748b"></i><i style="width:${r.image}%;background:#60a5fa"></i><i style="width:${r.chart+r.info}%;background:#8b5cf6"></i></div><small>텍스트 ${r.text}% · 이미지 ${r.image}% · 차트/인포그래픽 ${r.chart+r.info}%</small></button>`).join('')}
+function renderRatioSliders(){const labels={text:'텍스트 비율',image:'이미지 비율',chart:'차트 비율',info:'인포그래픽 비율',space:'여백 비율'};$('#ratioSliders').innerHTML=Object.entries(labels).map(([k,l])=>`<div class="range-row"><label>${l}</label><input type="range" min="0" max="70" value="${state.ratios[k]}" data-ratio-key="${k}"><span class="range-value">${state.ratios[k]}%</span></div>`).join('')}
+function renderPalettes(){$('#paletteGrid').innerHTML=DATA.palettes.map(p=>`<label class="palette-card ${state.palette===p.name?'selected':''}"><input type="radio" name="palette" value="${p.name}"><div class="swatches">${p.colors.map(c=>`<i class="swatch" style="background:${c}"></i>`).join('')}</div><h4>${p.name}</h4><p>${p.use}</p><div class="palette-meta"><span>대표 ${p.colors[0]}</span><span>보조 ${p.colors[1]}</span><span>강조 ${p.colors[2]}</span><span>배경 ${p.colors[3]}</span><span>텍스트 ${p.colors[4]}</span><span>${p.ratio}</span></div></label>`).join('')}
+function renderColorEditor(){const names=['대표','보조','강조','배경','텍스트'];$('#colorEditor').innerHTML=names.map((n,i)=>`<label class="color-field"><input type="color" data-color-index="${i}" value="${state.colors[i]}"><span>${n}<br>${state.colors[i]}</span></label>`).join('')}
+function renderAccessibilityOptions(){const opts=[['highContrast','고대비 모드'],['printBW','흑백 인쇄 고려'],['projector','프로젝터 환경 고려'],['colorVision','색각 이상 접근성 고려']];$('#accessibilityOptions').innerHTML=opts.map(([k,l])=>switchHTML(l,'accessibility',k,state.accessibility[k])).join('')}
+function switchHTML(label,group,key,val,desc=''){return `<div class="switch-row"><div><strong>${label}</strong>${desc?`<div class="hint">${desc}</div>`:''}</div><label class="switch"><input type="checkbox" data-object-group="${group}" data-object-key="${key}" ${val?'checked':''}><span class="slider"></span></label></div>`}
+function renderDataOptions(){const o=[['useData','데이터 사용'],['needChart','차트 필요'],['needTable','표 필요'],['highlightNumbers','주요 수치 강조'],['showSources','데이터 출처 표기'],['noFakeData','예시 데이터 사용 금지'],['usePlaceholders','데이터 부족 시 자리 표시자'],['markFactCheck','사실 확인 필요 표시']];$('#dataOptions').innerHTML=o.map(([k,l])=>switchHTML(l,'dataOptions',k,state.dataOptions[k])).join('')}
+function renderAdvancedFields(){const defs=[['aspectRatio','화면 비율',['16:9','4:3']],['slideSize','슬라이드 크기',['와이드','표준','A4 가로']],['titleStyle','제목 스타일',['결론형','질문형','키워드형']],['tone','문체',['명확하고 쉬운 한국어','전문적이고 간결하게','친근하고 설명형']],['contentDensity','콘텐츠 밀도',['낮음','보통','높음']],['margin','여백 크기',['넓게','보통','좁게']],['radius','모서리 둥글기',['없음','작게','중간','크게']],['shadow','그림자 강도',['없음','은은하게','보통']],['background','배경 스타일',['밝은 단색','미세한 그라데이션','다크 배경','텍스처 최소']],['fontMood','폰트 분위기',['현대적 산세리프','친근한 산세리프','에디토리얼','기술적']],['koFont','한글 폰트 추천',['Pretendard 또는 Noto Sans KR','SUIT 또는 Spoqa Han Sans Neo','나눔스퀘어']],['enFont','영문 폰트 추천',['Inter 또는 Aptos','Helvetica 또는 Arial','Manrope']],['bilingual','한글·영문 병기',['사용 안 함','핵심 용어만','모든 제목']],['speakerNotes','발표자 노트',['포함','사용 안 함']],['script','발표 대본',['별도 프롬프트 제공','슬라이드별 포함','사용 안 함']],['questions','예상 질문',['포함','사용 안 함']],['answers','예상 답변',['포함','사용 안 함']],['referencesPage','참고자료 페이지',['필요 시 포함','항상 포함','사용 안 함']],['sources','출처 표시',['표시','간단히 표시','사용 안 함']],['anonymize','개인정보 익명화',['적용','사용 안 함']],['logoPosition','로고 위치',['우측 상단','좌측 상단','우측 하단','사용 안 함']],['animation','애니메이션 강도',['없음','최소','보통']],['pageNumber','페이지 번호',['표시','사용 안 함']],['toc','목차',['포함','사용 안 함']],['summaryPage','마지막 요약 페이지',['포함','사용 안 함']],['qaPage','Q&A 페이지',['포함','사용 안 함']]];
+  let html=defs.map(([k,l,opts])=>`<div class="field"><label>${l}</label><select data-advanced-key="${k}">${opts.map(x=>`<option ${state.advanced[k]===x?'selected':''}>${x}</option>`).join('')}</select></div>`).join('');
+  html += [['brandName','회사명 또는 브랜드명'],['brandColors','브랜드 색상'],['forbidden','금지 표현'],['requiredPhrases','반드시 사용할 표현']].map(([k,l])=>`<div class="field"><label>${l}</label><input type="text" data-advanced-key="${k}" value="${esc(state.advanced[k])}" placeholder="선택 입력"></div>`).join('');
+  $('#advancedFields').innerHTML=html;
+}
+
+/* =========================================================
+   3. State bindings
+========================================================= */
+function bindEvents(){
+  document.addEventListener('change',e=>{
+    const t=e.target;
+    if(t.name==='userType'){state.userType=t.value;state.purpose=(DATA.purposePriority[state.userType]||['자유 주제'])[0];renderStaticUI();bindDynamicVisualState();}
+    else if(t.name==='purpose'){state.purpose=t.value;recommendVisuals(false);renderPurposeChips();renderMultiChips('#visualChips',DATA.visuals,'visuals');}
+    else if(t.name==='structure'){state.structure=t.value;}
+    else if(t.name==='concept'){state.concept=t.value;recommendPaletteForConcept(false);}
+    else if(t.name==='palette'){selectPalette(t.value);}
+    else if(t.dataset.arrayKey){toggleArray(t.dataset.arrayKey,t.value,t.checked);}
+    else if(t.dataset.singleKey){state[t.dataset.singleKey]=t.value; if(t.dataset.singleKey==='characterUse') updateCharacterVisibility();}
+    else if(t.dataset.key){state[t.dataset.key]=t.type==='number'?Number(t.value):t.value;}
+    else if(t.dataset.objectGroup){state[t.dataset.objectGroup][t.dataset.objectKey]=t.checked;}
+    else if(t.dataset.ratioKey){state.ratios[t.dataset.ratioKey]=Number(t.value);t.nextElementSibling.textContent=t.value+'%';}
+    else if(t.dataset.colorIndex){state.colors[Number(t.dataset.colorIndex)]=t.value.toUpperCase();renderColorEditor();}
+    else if(t.dataset.advancedKey){state.advanced[t.dataset.advancedKey]=t.value;}
+    autoSave();renderAll();
+  });
+  document.addEventListener('input',e=>{
+    const t=e.target;
+    if(t.dataset.key){state[t.dataset.key]=t.type==='number'?Number(t.value):t.value;autoSave();renderAll();}
+    if(t.dataset.advancedKey){state.advanced[t.dataset.advancedKey]=t.value;autoSave();renderAll();}
+  });
+  document.addEventListener('click',e=>{
+    const card=e.target.closest('.choice-card,.choice-chip,.palette-card,.mini-card');if(card&&card.querySelector('input')){const input=card.querySelector('input');if(input.type==='checkbox'){setTimeout(()=>{card.classList.toggle('selected',input.checked)},0)}else{$$(`input[name="${input.name}"]`).forEach(i=>i.closest('label')?.classList.remove('selected'));card.classList.add('selected')}}
+    const practice=e.target.closest('[data-practice-example]');if(practice)applyPracticeExample(practice.dataset.practiceExample);
+    const tpl=e.target.closest('[data-template]');if(tpl)applyTemplate(tpl.dataset.template);
+    const ratio=e.target.closest('[data-ratio]');if(ratio){state.ratioPreset=ratio.dataset.ratioName;state.ratios=JSON.parse(ratio.dataset.ratio);renderRatioPresets();renderRatioSliders();renderAll();}
+    const pt=e.target.closest('[data-preview-tab]');if(pt){activePreviewTab=Number(pt.dataset.previewTab);renderPreviewTabs();renderAll();}
+    const mt=e.target.closest('[data-mobile-tab]');if(mt)switchMobileTab(mt.dataset.mobileTab);
+    const mode=e.target.closest('[data-mode]');if(mode)setMode(mode.dataset.mode);
+  });
+  $('#prevBtn').onclick=()=>goStep(-1); $('#nextBtn').onclick=()=>goStep(1); $('#saveBtn').onclick=()=>{autoSave();toast('현재 설정을 저장했습니다.')};
+  $('#sampleBtn').onclick=loadSample; $('#randomBtn').onclick=randomize; $('#resetBtn').onclick=resetAll;
+  $('#recommendPalette').onclick=()=>recommendPaletteForConcept(true); $('#randomPalette').onclick=randomPalette;
+  $('#copyCurrent').onclick=()=>copyText(getPreviewContent()); $('#copyAllFinal').onclick=()=>copyText(generateFullPrompt()); $('#togglePromptLength').onclick=()=>{shortPrompt=!shortPrompt;$('#togglePromptLength').textContent=shortPrompt?'상세히 보기':'짧게 보기';renderAll()};
+  $('#downloadTxt').onclick=()=>downloadFile('ppt-prompt.txt',generateFullPrompt(),'text/plain'); $('#downloadMd').onclick=()=>downloadFile('ppt-prompt.md',generateMarkdown(),'text/markdown'); $('#exportJson').onclick=exportJSON; $('#importJsonBtn').onclick=()=>$('#importJsonInput').click(); $('#importJsonInput').onchange=importJSON;
+  $('#shareStateBtn').onclick=showShareState; $('#closeModal').onclick=()=>$('#shareModal').classList.add('hidden'); $('#copyShare').onclick=()=>copyText($('#shareText').value);
+}
+function bindDynamicVisualState(){updateCharacterVisibility();setMode(state.mode);syncInputsFromState();renderAll()}
+function syncInputsFromState(){
+  $$('[data-key]').forEach(el=>{if(state[el.dataset.key]!==undefined)el.value=state[el.dataset.key]});
+  $('#customPurpose').value=state.customPurpose||''; $('#customPurpose').oninput=e=>{state.customPurpose=e.target.value;renderAll();autoSave()};
+}
+function toggleArray(key,val,checked){const a=new Set(state[key]||[]);checked?a.add(val):a.delete(val);state[key]=[...a]}
+function setMode(mode){state.mode=mode;$$('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));$$('.advanced-only').forEach(x=>x.classList.toggle('hidden',mode!=='advanced'));renderAll();autoSave()}
+function updateCharacterVisibility(){$('#characterSettings').classList.toggle('hidden',state.characterUse==='사용 안 함')}
+
+/* =========================================================
+   4. Recommendations and templates
+========================================================= */
+function recommendVisuals(showToast=true){const key=state.customPurpose||state.purpose;const rec=DATA.visualRecommendations[key]||['아이콘 인포그래픽','숫자 강조 카드','프로세스 다이어그램'];state.visuals=[...new Set([...state.visuals,...rec.slice(0,4)])];if(showToast)toast('목적에 맞는 시각화를 추천했습니다.')}
+function recommendPaletteForConcept(showToast=true){let name='신뢰와 전문성';if(/젊|창의|밝/.test(state.concept))name='창의성과 에너지';else if(/따뜻|친근/.test(state.concept))name='친근한 교육';else if(/기술|미래/.test(state.concept))name='미래 기술';else if(/차분|고급|설득/.test(state.concept))name='차분한 설득';else if(/취업|면접/.test(state.customPurpose||state.purpose))name='취업 포트폴리오';selectPalette(name);if(showToast)toast('콘셉트에 맞는 팔레트를 추천했습니다.')}
+function selectPalette(name){const p=DATA.palettes.find(x=>x.name===name);if(!p)return;state.palette=name;state.colors=[...p.colors];renderPalettes();renderColorEditor();renderAll()}
+function randomPalette(){selectPalette(DATA.palettes[Math.floor(Math.random()*DATA.palettes.length)].name);toast('랜덤 팔레트를 적용했습니다.')}
+function applyTemplate(name){
+  const map={
+    '취업 포트폴리오':{userType:'취업준비생',purpose:'취업 포트폴리오',structure:'포트폴리오 구성',visuals:['타임라인','프로세스 다이어그램','숫자 강조 카드','전후 비교'],concept:'깔끔하고 신뢰감 있게',styles:['포트폴리오 스타일'],layouts:['포트폴리오형','이미지 중심','숫자 강조'],palette:'취업 포트폴리오'},
+    '면접 발표':{userType:'취업준비생',purpose:'면접 발표',structure:'경험 → 역할 → 성과 → 배운 점',visuals:['타임라인','프로세스 다이어그램','숫자 강조 카드'],concept:'깔끔하고 신뢰감 있게',palette:'취업 포트폴리오'},
+    '주간 업무 보고':{userType:'재직자',purpose:'업무 보고',structure:'목표 → 실행 → 결과',visuals:['KPI 대시보드','표','막대그래프','단계별 체크리스트'],concept:'전문적이고 논리적으로',palette:'신뢰와 전문성'},
+    '창업 피치덱':{userType:'창업 준비자',purpose:'창업 피치덱',structure:'문제 → 해결 → 기대효과',visuals:['막대그래프','비즈니스 모델 캔버스','로드맵','선그래프','도넛차트'],concept:'강렬하고 설득력 있게',styles:['스타트업 피치덱'],palette:'미래 기술'},
+    '투자 제안서':{userType:'창업 준비자',purpose:'투자 제안',structure:'배경 → 분석 → 제안',visuals:['KPI 대시보드','선그래프','도넛차트','로드맵'],concept:'차분하고 고급스럽게',palette:'차분한 설득'},
+    '강의 자료':{userType:'대학생',purpose:'강의 및 교육자료',structure:'질문 → 근거 → 결론',visuals:['아이콘 인포그래픽','단계별 체크리스트','마인드맵'],concept:'따뜻하고 친근하게',palette:'친근한 교육'}
+  };
+  const base=map[name]||{purpose:name.replace('서','').replace('회사 ','').replace('서비스 소개','제품 소개'),structure:'AI 자동 추천',visuals:['아이콘 인포그래픽','프로세스 다이어그램','숫자 강조 카드']};
+  Object.assign(state,base);if(base.palette)selectPalette(base.palette);renderStaticUI();bindDynamicVisualState();toast(`${name} 템플릿을 적용했습니다.`)
+}
+function loadSample(){state=structuredClone(DEFAULT_STATE);Object.assign(state,{userType:'취업준비생',purpose:'면접 발표',title:'마케팅 직무 면접 발표',topic:'프로젝트 경험과 문제 해결 능력',goal:'마케팅 직무 적합성과 데이터 기반 실행력을 보여주기',audience:'마케팅 팀장과 실무 면접관',duration:'5분',slideCount:7,coreMessage:'데이터를 활용해 문제를 발견하고 성과를 만든 경험이 있다.',mustInclude:'문제 정의, 분석, 실행, 성과, 배운 점',structure:'경험 → 역할 → 성과 → 배운 점',customStructure:'문제 → 분석 → 실행 → 성과 → 배운 점',visuals:['타임라인','전후 비교','숫자 강조 카드','프로세스 다이어그램'],concept:'깔끔하고 신뢰감 있게',styles:['모던 비즈니스'],palette:'취업 포트폴리오',colors:['#172554','#1D4ED8','#93C5FD','#FFFFFF','#111827'],imageStyle:'실제 사진',iconStyle:'미니멀',characterUse:'사용 안 함',textDensity:'간결하게',maxBodyLines:3,maxBullets:3});renderStaticUI();bindDynamicVisualState();toast('샘플 설정을 불러왔습니다.')}
+function randomize(){state.purpose=DATA.purposes[Math.floor(Math.random()*15)];state.structure=DATA.structures[Math.floor(Math.random()*10)][0];state.visuals=[...DATA.visuals].sort(()=>Math.random()-.5).slice(0,4);state.concept=DATA.concepts[Math.floor(Math.random()*DATA.concepts.length)];state.styles=[DATA.styles[Math.floor(Math.random()*(DATA.styles.length-1))]];state.layouts=[...DATA.layouts].sort(()=>Math.random()-.5).slice(0,3);randomPalette();renderStaticUI();bindDynamicVisualState();toast('랜덤 추천을 적용했습니다.')}
+
+/* =========================================================
+   5. Prompt generation
+========================================================= */
+function safe(v,fallback='AI가 목적에 맞게 추천'){return String(v||'').trim()||fallback}
+function sanitizeCharacterReference(text){return String(text||'').replace(/산리오/gi,'둥근 형태, 파스텔 색상, 단순한 표정, 친근한 마스코트').replace(/픽사/gi,'따뜻한 조명, 부드러운 3D 질감, 풍부한 표정, 친근한 애니메이션').replace(/디즈니|마블|포켓몬|카카오프렌즈/gi,'특정 저작물을 복제하지 않는 친근하고 독창적인 캐릭터').replace(/처럼|같은/gi,'에서 느껴지는 일반적 특징을 참고한')}
+function buildSlideOutline(){
+  const n=Math.max(3,Math.min(30,Number(state.slideCount)||7));const purpose=state.customPurpose||state.purpose;let seq=[];
+  if(/면접|포트폴리오|자기소개/.test(purpose)) seq=['한눈에 보는 나','발표 목표와 핵심 역량','문제 상황','분석과 인사이트','실행 과정','성과와 변화','배운 점과 기여 가능성','마무리'];
+  else if(/창업|투자|사업|영업/.test(purpose)) seq=['표지와 한 문장 가치제안','문제와 고객','시장 기회','해결책','핵심 기능 또는 서비스','비즈니스 모델','경쟁력','실행 로드맵','성과 또는 전망','제안과 다음 행동'];
+  else if(/업무|프로젝트 결과/.test(purpose)) seq=['요약과 결론','목표와 범위','진행 현황','핵심 성과','데이터 분석','이슈와 원인','개선안','다음 계획','요청 사항'];
+  else if(/강의|교육/.test(purpose)) seq=['학습 목표','왜 중요한가','핵심 개념','사례','단계별 방법','실습 또는 질문','핵심 요약','다음 행동'];
+  else seq=['표지와 핵심 메시지','배경과 목적','현재 상황','핵심 문제','분석','제안','기대효과','실행 계획','요약과 다음 행동'];
+  while(seq.length<n)seq.splice(seq.length-1,0,`세부 내용 ${seq.length}`);seq=seq.slice(0,n);
+  const visuals=state.visuals.length?state.visuals:['AI 자동 추천'];const layouts=state.layouts.length?state.layouts:['자동 추천'];
+  return seq.map((title,i)=>({num:i+1,title,core:i===0?safe(state.coreMessage,`발표의 핵심 내용을 한 문장으로 제시`):`${title}에서 청중이 기억해야 할 결론을 한 문장으로 제시`,content:i===0?`${safe(state.title,'발표 제목')} · ${safe(state.topic,'발표 주제')}`:`${safe(state.mustInclude,'사용자가 제공한 정보')} 중 ${title}에 필요한 내용만 선별`,layout:layouts[i%layouts.length],visual:visuals[i%visuals.length],image:state.imageStyle==='이미지 사용 안 함'?'사용 안 함':(i%2===0?state.imageStyle:'필요 시 사용'),icon:state.iconStyle==='아이콘 사용 안 함'?'사용 안 함':state.iconStyle,character:state.characterUse==='사용 안 함'?'사용 안 함':`${state.characterStyle} ${state.characterType} · ${state.characterRole}`,number:state.dataOptions.highlightNumbers?'핵심 수치 최대 3개':'필요 시 1~2개',text:`제목 ${state.maxTitleChars}자 이내 · 본문 ${state.maxBodyLines}줄 · 불릿 ${state.maxBullets}개 이내`,notes:`이 슬라이드의 결론, 전환 문장, 설명할 근거를 ${state.duration} 발표 흐름에 맞춰 작성`}))
+}
+function slideOutlineText(){return buildSlideOutline().map(s=>`슬라이드 ${s.num}: ${s.title}\n핵심 메시지: ${s.core}\n들어갈 내용: ${s.content}\n추천 레이아웃: ${s.layout}\n추천 시각화: ${s.visual}\n이미지: ${s.image}\n아이콘: ${s.icon}\n캐릭터: ${s.character}\n강조할 숫자: ${s.number}\n텍스트 제한: ${s.text}\n발표자 노트: ${s.notes}`).join('\n\n')}
+function designInstructions(){return `디자인 콘셉트: ${state.concept}\n상세 스타일: ${state.styles.join(', ')||'AI 추천'}\n기본 레이아웃: ${state.layouts.join(', ')||'자동 추천'}\n색상 팔레트: ${state.palette}\n- 대표 ${state.colors[0]}, 보조 ${state.colors[1]}, 강조 ${state.colors[2]}, 배경 ${state.colors[3]}, 텍스트 ${state.colors[4]}\n시각 비율: 텍스트 ${state.ratios.text}%, 이미지 ${state.ratios.image}%, 차트 ${state.ratios.chart}%, 인포그래픽 ${state.ratios.info}%, 여백 ${state.ratios.space}%\n폰트: 한글 ${state.advanced.koFont}, 영문 ${state.advanced.enFont}\n여백 ${state.advanced.margin}, 모서리 ${state.advanced.radius}, 그림자 ${state.advanced.shadow}, 배경 ${state.advanced.background}\n접근성: ${Object.entries(state.accessibility).filter(([,v])=>v).map(([k])=>({highContrast:'고대비',printBW:'흑백 인쇄',projector:'프로젝터',colorVision:'색각 이상'}[k])).join(', ')||'기본 가독성 준수'}`}
+function visualizationInstructions(){return `선택 시각화: ${state.visuals.join(', ')||'AI 자동 추천'}\n차트 스타일: ${state.chartStyle}\n데이터 사용: ${state.dataOptions.useData?'사용':'사용 안 함'} / 차트 ${state.dataOptions.needChart?'필요':'선택'} / 표 ${state.dataOptions.needTable?'필요':'선택'}\n수치 강조: ${state.dataOptions.highlightNumbers?'핵심 수치 최대 3개 강조':'과도한 수치 강조 금지'}\n출처: ${state.dataOptions.showSources?'슬라이드 하단에 간단히 표시':'필요 시 표시'}\n중요: 사용자가 제공하지 않은 실제 수치, 통계, 기업 정보는 임의로 생성하지 않는다. 필요한 경우 ‘데이터 입력 필요’라는 자리 표시자를 사용한다.\n차트에는 핵심 인사이트 한 문장을 함께 표시하고, 표는 행과 열을 최소화한다.`}
+function imageCharacterInstructions(){let c=`이미지 스타일: ${state.imageStyle}. 전체 PPT에서 동일한 사진 톤, 조명, 질감과 일러스트 표현을 유지한다.\n아이콘 스타일: ${state.iconStyle}. 한 PPT 안에서 선 두께, 채움 방식, 모서리와 색상 스타일을 동일하게 유지한다.`;if(state.characterUse!=='사용 안 함')c+=`\n캐릭터: ${state.characterType}, ${state.characterStyle}, 역할은 ${state.characterRole}, 기본 감정은 ${state.characterEmotion}, 위치는 ${state.characterPosition}, 크기는 ${state.characterSize}.\n참고 분위기: ${safe(sanitizeCharacterReference(state.characterReference),'독창적이고 목적에 맞는 일반적 캐릭터 특성')}. 특정 저작권 캐릭터의 이름, 고유 외형, 의상, 로고를 복제하지 않는다.\n캐릭터가 본문이나 차트를 가리지 않으며, 모든 슬라이드에서 동일한 외형과 색상 스타일을 유지한다. 슬라이드 내용에 따라 표정과 동작만 변경하고 장식용으로 과도하게 사용하지 않는다.`;else c+='\n캐릭터는 사용하지 않는다.';return c}
+function speakerInstructions(){return `각 슬라이드마다 발표자 노트를 작성한다.\n- 화면에 적지 않은 배경 설명과 근거를 보완한다.\n- 슬라이드 간 전환 문장을 포함한다.\n- 전체 발표 시간 ${state.duration}에 맞춰 슬라이드별 권장 시간을 배분한다.\n- 예상 질문과 답변을 ${state.advanced.questions==='포함'?'포함':'생략'}한다.\n- 발표 대본은 화면 문장을 그대로 읽지 않고 자연스러운 말하기 문장으로 작성한다.`}
+function mandatoryRules(){return `필수 제작 규칙\n1. 단순한 긴 문장이나 줄글 위주의 슬라이드를 만들지 않는다.\n2. 한 슬라이드에는 하나의 핵심 메시지만 배치한다.\n3. 텍스트보다 표, 차트, 이미지, 아이콘, 인포그래픽을 우선한다.\n4. 슬라이드마다 최소 하나의 시각 요소를 사용한다.\n5. 제목은 설명형보다 결론형 문장으로 작성한다.\n6. 본문은 짧은 문장과 키워드 중심으로 구성한다.\n7. 불릿은 최대 ${state.maxBullets}개, 본문은 최대 ${state.maxBodyLines}줄, 한 불릿은 ${state.maxCharsLine}자 이내로 제한한다.\n8. 같은 레이아웃을 반복하지 않는다.\n9. 색상, 폰트, 아이콘, 이미지 스타일을 일관되게 유지한다.\n10. 과도한 장식, 그림자, 그라데이션을 사용하지 않는다.\n11. 차트에는 핵심 인사이트 한 문장을 함께 표시한다.\n12. 표는 핵심 비교 항목만 보여준다.\n13. 실제 데이터가 없는 경우 임의의 수치를 생성하지 않는다.\n14. 발표 대상과 목적에 맞는 표현을 사용한다.\n15. 접근성과 가독성을 고려한 색 대비를 사용한다.\n16. 캐릭터는 내용 이해를 돕는 범위에서만 활용한다.`}
+function generateFullPrompt(){const purpose=state.customPurpose||state.purpose;return `당신은 프레젠테이션 전략가, 정보 디자이너, 데이터 시각화 전문가입니다. 아래 조건에 맞춰 ${state.slideCount}장의 PPT 구성안과 디자인 지시를 만들어 주세요. 결과는 ChatGPT, Claude, Gemini, Gamma, Canva AI 등에서 바로 활용할 수 있을 만큼 구체적으로 작성하세요.\n\n[발표 정보]\n사용자 유형: ${state.userType}\nPPT 목적: ${purpose}\n발표 제목: ${safe(state.title)}\n발표 주제: ${safe(state.topic)}\n발표 목적: ${safe(state.goal)}\n청중: ${safe(state.audience)}\n발표 시간: ${state.duration}\n슬라이드 수: ${state.slideCount}장\n핵심 메시지: ${safe(state.coreMessage)}\n발표 후 원하는 행동: ${safe(state.cta)}\n반드시 포함: ${safe(state.mustInclude,'제공된 정보 중 핵심 내용')}\n제외: ${safe(state.exclude,'개인정보, 기밀, 검증되지 않은 주장')}\n보유 자료: ${safe(state.assets,'없음. 필요한 위치에 자리 표시자 사용')}\n참고 메모: ${safe(state.references,'없음')}\n\n[내용 구성]\n${state.customStructure||state.structure}\n각 슬라이드는 제목, 핵심 메시지, 들어갈 내용, 추천 레이아웃, 추천 시각화, 이미지·아이콘·캐릭터 사용 여부, 강조 숫자, 텍스트 분량, 발표자 노트를 포함하세요.\n\n[슬라이드별 구성안]\n${slideOutlineText()}\n\n[디자인 시스템]\n${designInstructions()}\n\n[시각화 및 데이터]\n${visualizationInstructions()}\n\n[이미지·아이콘·캐릭터]\n${imageCharacterInstructions()}\n\n[발표자 노트]\n${speakerInstructions()}\n\n[출력 형식]\n1. 전체 PPT의 한 문장 콘셉트\n2. 슬라이드별 구성안\n3. 디자인 시스템\n4. 이미지·아이콘·차트 제작 지시\n5. 발표자 노트\n6. 마지막에 자체 점검 체크리스트\n\n${mandatoryRules()}\n\n추가 조건: 개인정보는 ${state.advanced.anonymize}, 출처는 ${state.advanced.sources}, 페이지 번호는 ${state.advanced.pageNumber}, 목차는 ${state.advanced.toc}, 마지막 요약은 ${state.advanced.summaryPage}, Q&A는 ${state.advanced.qaPage}. 금지 표현: ${safe(state.advanced.forbidden,'없음')}. 반드시 사용할 표현: ${safe(state.advanced.requiredPhrases,'없음')}.`}
+function shortPromptText(){return `시각 중심 ${state.slideCount}장 PPT를 설계해 주세요. 목적은 ${state.customPurpose||state.purpose}, 청중은 ${safe(state.audience)}, 핵심 메시지는 “${safe(state.coreMessage)}”입니다. 구성은 ${state.customStructure||state.structure}, 시각화는 ${state.visuals.join(', ')}, 디자인은 ${state.concept} / ${state.styles.join(', ')}, 팔레트는 ${state.colors.join(', ')}를 사용하세요. 한 슬라이드에 핵심 메시지 1개, 본문 ${state.maxBodyLines}줄 이하, 불릿 ${state.maxBullets}개 이하, 슬라이드마다 시각 요소 1개 이상을 배치하세요. 실제 데이터가 없으면 수치를 만들지 말고 ‘데이터 입력 필요’로 표시하세요. 각 슬라이드에 제목, 핵심 메시지, 내용, 레이아웃, 시각화, 이미지, 아이콘, 캐릭터, 발표자 노트를 포함하세요.`}
+function getPreviewContent(){if(shortPrompt)return shortPromptText();return [generateFullPrompt(),slideOutlineText(),designInstructions(),visualizationInstructions(),imageCharacterInstructions(),speakerInstructions()][activePreviewTab]}
+function generateMarkdown(){return `# PPT 제작 프롬프트\n\n${generateFullPrompt().replace(/\n/g,'\n\n')}\n\n## 빠른 수정 프롬프트\n\n- 글자를 더 줄여줘\n- 더 시각적으로 바꿔줘\n- 표와 인포그래픽을 늘려줘\n- 임원 보고용으로 바꿔줘\n- 취업 면접용으로 바꿔줘\n- 대학생 발표용으로 쉽게 바꿔줘\n- 캐릭터 사용을 줄여줘\n- 디자인을 더 전문적으로 바꿔줘\n- 색상을 더 밝게 바꿔줘\n- 데이터 중심으로 바꿔줘`}
+
+/* =========================================================
+   6. Rendering
+========================================================= */
+function renderAll(){renderStep();renderPreview();renderFinalCards();applyPreviewColors();updateCharacterVisibility()}
+function renderStep(){const s=state.currentStep;$$('.step').forEach(x=>x.classList.toggle('hidden',Number(x.dataset.step)!==s));const labels=['사용자 유형','PPT 목적','발표 기본 정보','내용 구성','시각화 방식','디자인 콘셉트','색상 팔레트','이미지 및 캐릭터','고급 설정','결과 확인'];$('#stepLabel').textContent=`${s}. ${labels[s-1]}`;$('#stepCount').textContent=`${s} / 10`;$('#progressBar').style.width=`${s*10}%`;$('#prevBtn').disabled=s===1;$('#nextBtn').textContent=s===10?'처음으로':'다음 단계 →';}
+function renderPreviewTabs(){$$('#previewTabs button').forEach((b,i)=>b.classList.toggle('active',i===activePreviewTab));$('#previewTitle').textContent=DATA.previewTabs[activePreviewTab]}
+function renderPreview(){renderPreviewTabs();$('#promptOutput').textContent=getPreviewContent();$('#miniTitle').textContent=state.coreMessage||state.title||'핵심 메시지를 한 문장으로';$('#miniBody').textContent=`${state.concept} · ${state.visuals.slice(0,2).join(' + ')||'시각 요소 자동 추천'}`;$('#miniCard').textContent=`본문 ${state.maxBodyLines}줄 · 불릿 ${state.maxBullets}개 · ${state.imageStyle}`}
+function applyPreviewColors(){const r=document.documentElement.style;r.setProperty('--preview-primary',state.colors[0]);r.setProperty('--preview-secondary',state.colors[1]);r.setProperty('--preview-accent',state.colors[2]);r.setProperty('--preview-bg',state.colors[3]);r.setProperty('--preview-text',state.colors[4])}
+function renderFinalCards(){if(state.currentStep!==10)return;const cards=[['완성형 PPT 제작 프롬프트',generateFullPrompt()],['슬라이드별 구성안',slideOutlineText()],['디자인 시스템',designInstructions()+`\n이미지: ${state.imageStyle}\n아이콘: ${state.iconStyle}\n차트: ${state.chartStyle}`],['발표 대본 생성용 프롬프트',`다음 PPT 구성안을 바탕으로 ${state.duration} 분량의 자연스러운 발표 대본을 작성해 주세요. 화면의 문장을 그대로 읽지 말고, 슬라이드별 핵심 설명·전환 문장·강조 포인트·예상 시간을 포함하세요.\n\n${slideOutlineText()}`],['빠른 수정 프롬프트','글자를 더 줄여줘\n더 시각적으로 바꿔줘\n표와 인포그래픽을 늘려줘\n임원 보고용으로 바꿔줘\n취업 면접용으로 바꿔줘\n대학생 발표용으로 쉽게 바꿔줘\n캐릭터 사용을 줄여줘\n디자인을 더 전문적으로 바꿔줘\n색상을 더 밝게 바꿔줘\n데이터 중심으로 바꿔줘']];$('#finalCards').innerHTML=cards.map(([t,b],i)=>`<article class="result-card"><header><h4>${t}</h4><button class="btn small" data-copy-card="${i}">복사</button></header><div class="body">${esc(b)}</div></article>`).join('');$$('[data-copy-card]').forEach((b,i)=>b.onclick=()=>copyText(cards[i][1]))}
+
+/* =========================================================
+   7. Navigation, validation, storage and files
+========================================================= */
+function validateStep(){if(state.currentStep===3&&!String(state.title).trim()){const f=$('#title').closest('.field');f.classList.add('invalid');$('#title').focus();toast('발표 제목을 입력해 주세요.');return false}$$('.field.invalid').forEach(x=>x.classList.remove('invalid'));return true}
+function goStep(delta){if(delta>0&&!validateStep())return;if(state.currentStep===10&&delta>0)state.currentStep=1;else state.currentStep=Math.min(10,Math.max(1,state.currentStep+delta));renderAll();window.scrollTo({top:0,behavior:'smooth'});autoSave()}
+function autoSave(){try{localStorage.setItem('visualPptPromptBuilderState',JSON.stringify(state))}catch(e){console.warn('localStorage 저장 실패',e)}}
+function loadSaved(){try{const raw=localStorage.getItem('visualPptPromptBuilderState');if(raw)state=mergeState(JSON.parse(raw))}catch(e){console.warn('저장값 불러오기 실패',e)}}
+function mergeState(x){const s=structuredClone(DEFAULT_STATE);Object.assign(s,x);s.ratios={...DEFAULT_STATE.ratios,...(x.ratios||{})};s.accessibility={...DEFAULT_STATE.accessibility,...(x.accessibility||{})};s.dataOptions={...DEFAULT_STATE.dataOptions,...(x.dataOptions||{})};s.advanced={...DEFAULT_STATE.advanced,...(x.advanced||{})};return s}
+function resetAll(){if(!confirm('모든 입력과 저장된 설정을 초기화할까요?'))return;localStorage.removeItem('visualPptPromptBuilderState');state=structuredClone(DEFAULT_STATE);renderStaticUI();bindDynamicVisualState();toast('전체 설정을 초기화했습니다.')}
+async function copyText(text){try{await navigator.clipboard.writeText(text);toast('복사했습니다.')}catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('복사했습니다.')}}
+function downloadFile(name,content,type){const blob=new Blob([content],{type:`${type};charset=utf-8`});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast(`${name} 파일을 저장했습니다.`)}
+function exportJSON(){downloadFile('visual-ppt-prompt-settings.json',JSON.stringify(state,null,2),'application/json')}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{state=mergeState(JSON.parse(r.result));renderStaticUI();bindDynamicVisualState();toast('설정 JSON을 불러왔습니다.')}catch{toast('올바른 JSON 파일이 아닙니다.')}};r.readAsText(f);e.target.value=''}
+function showShareState(){const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(state))));$('#shareText').value=encoded;$('#shareModal').classList.remove('hidden')}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),2200)}
+function switchMobileTab(tab){$$('[data-mobile-tab]').forEach(b=>b.classList.toggle('active',b.dataset.mobileTab===tab));$('#formPanel').classList.toggle('mobile-hidden',tab!=='form');$('#previewPanel').classList.toggle('mobile-hidden',tab!=='preview')}
+
+/* =========================================================
+   8. Boot
+========================================================= */
+loadSaved();renderStaticUI();bindEvents();bindDynamicVisualState();
+</script>
+</body>
+</html>
