@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 셀카 이력서 사진 스튜디오 | 웹앱만들기</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            padding: 16px;
+            color: #0f172a;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            color: var(--primary-color);
+            margin-bottom: 6px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 캔버스 및 촬영 영역 */
+        .studio-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 300px;
+            height: 400px; /* 3:4 이력서 비율 */
+            background: #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* 거울 모드 */
+        }
+
+        #photoCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            background: var(--primary-color);
+            color: white;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* 컨트롤 영역 */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #475569;
+            margin: 12px 0 8px 0;
+        }
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .style-item {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            background: #fff;
+        }
+
+        .style-item:hover, .style-item.active {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* 조절 슬라이더 */
+        .control-slider {
+            margin-bottom: 10px;
+        }
+
+        .control-slider label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .control-slider input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>📸 셀카 이력서 사진 스튜디오</h1>
+        <p>셀카를 찍고 원하는 정장과 머리스타일을 조율하여 즉시 완성해보세요!</p>
+    </header>
+
+    <div class="layout">
+        <div class="card studio-box">
+            <div class="canvas-container" id="canvasContainer">
+                <video id="videoElement" autoplay playsinline></video>
+                <canvas id="photoCanvas" style="display:none;"></canvas>
+            </div>
+
+            <div class="btn-group" id="cameraControls">
+                <button class="btn" onclick="takeSnapshot()">📷 셀카 촬영하기</button>
+            </div>
+            <div class="btn-group" id="retakeControls" style="display:none;">
+                <button class="btn btn-secondary" onclick="retakePhoto()">🔄 다시 촬영</button>
+                <button class="btn" onclick="downloadPhoto()">💾 사진 저장하기</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="setGender('man')">👨 남성 스타일</button>
+                <button class="tab-btn" onclick="setGender('woman')">👩 여성 스타일</button>
+            </div>
+
+            <div class="section-title">🎨 배경 색상</div>
+            <div class="style-grid">
+                <div class="style-item active" onclick="setBgColor('#cbd5e1')">연회색 (표준)</div>
+                <div class="style-item" onclick="setBgColor('#93c5fd')">파란색 (화사함)</div>
+                <div class="style-item" onclick="setBgColor('#ffffff')">흰색 (깔끔함)</div>
+                <div class="style-item" onclick="setBgColor('#1e293b')">다크 네이비</div>
+            </div>
+
+            <div class="section-title">👔 정장 의상 선택</div>
+            <div class="style-grid" id="outfitGrid"></div>
+
+            <div class="section-title">⚙️ 의상 위치 및 크기 미세 조절</div>
+            <div class="control-slider">
+                <label><span>의상 크기 (Scale)</span><span id="scaleVal">100%</span></label>
+                <input type="range" id="scaleSlider" min="50" max="150" value="100" oninput="updateOverlay()">
+            </div>
+            <div class="control-slider">
+                <label><span>의상 위/아래 위치 (Y-Pos)</span><span id="yVal">0</span></label>
+                <input type="range" id="ySlider" min="-100" max="100" value="0" oninput="updateOverlay()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('videoElement');
+    const canvas = document.getElementById('photoCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let isCaptured = false;
+    let currentGender = 'man';
+    let selectedBg = '#cbd5e1';
+    let selectedOutfit = 'suit1';
+    let capturedImage = null;
+
+    // SVG 합성 의상 그래픽 생성기 (독립 싱글파일 구동용)
+    const outfitGraphics = {
+        man: [
+            { id: 'suit1', name: '검정 정장 + 넥타이', color: '#1e293b', tie: '#dc2626' },
+            { id: 'suit2', name: '네이비 비즈니스', color: '#1e3a8a', tie: '#0284c7' },
+            { id: 'suit3', name: '드레스 셔츠 단독', color: '#ffffff', tie: null }
+        ],
+        woman: [
+            { id: 'suit1', name: '검정 블레이저 + 탑', color: '#0f172a', inner: '#ffffff' },
+            { id: 'suit2', name: '트위드 재킷', color: '#475569', inner: '#f8fafc' },
+            { id: 'suit3', name: '화이트 블라우스', color: '#ffffff', inner: null }
+        ]
+    };
+
+    // 1. 웹캠 카메라 켜기
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 600, height: 800, facingMode: "user" } });
+            video.srcObject = stream;
+        } catch (err) {
+            alert("카메라를 켤 수 없습니다. 권한을 허용해 주세요!");
+        }
+    }
+
+    // 2. 셀카 촬영
+    function takeSnapshot() {
+        canvas.width = 600;
+        canvas.height = 800;
+
+        // 좌우 반전 복사
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // 변환 초기화
+
+        // 이미지 데이터 저장
+        capturedImage = new Image();
+        capturedImage.src = canvas.toDataURL('image/png');
+        capturedImage.onload = () => {
+            isCaptured = true;
+            video.style.display = 'none';
+            canvas.style.display = 'block';
+            document.getElementById('cameraControls').style.display = 'none';
+            document.getElementById('retakeControls').style.display = 'flex';
+            drawComposite();
+        };
+    }
+
+    // 3. 다시 촬영
+    function retakePhoto() {
+        isCaptured = false;
+        video.style.display = 'block';
+        canvas.style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'flex';
+        document.getElementById('retakeControls').style.display = 'none';
+    }
+
+    // 4. 성별 변경
+    function setGender(gender) {
+        currentGender = gender;
+        document.querySelectorAll('.tabs .tab-btn').forEach((btn, idx) => {
+            btn.classList.toggle('active', (gender === 'man' && idx === 0) || (gender === 'woman' && idx === 1));
+        });
+        renderOutfits();
+        if (isCaptured) drawComposite();
+    }
+
+    function renderOutfits() {
+        const grid = document.getElementById('outfitGrid');
+        grid.innerHTML = '';
+        outfitGraphics[currentGender].forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = `style-item ${idx === 0 ? 'active' : ''}`;
+            div.innerText = item.name;
+            div.onclick = () => {
+                grid.querySelectorAll('.style-item').forEach(i => i.classList.remove('active'));
+                div.classList.add('active');
+                selectedOutfit = item.id;
+                if (isCaptured) drawComposite();
+            };
+            grid.appendChild(div);
+        });
+    }
+
+    function setBgColor(color) {
+        selectedBg = color;
+        if (isCaptured) drawComposite();
+    }
+
+    function updateOverlay() {
+        document.getElementById('scaleVal').innerText = document.getElementById('scaleSlider').value + '%';
+        document.getElementById('yVal').innerText = document.getElementById('ySlider').value;
+        if (isCaptured) drawComposite();
+    }
+
+    // 5. 캔버스 위에 셀카 + 배경 + 가상 정장 레이어 합성
+    function drawComposite() {
+        if (!capturedImage) return;
+
+        // A. 배경색 칠하기
+        ctx.fillStyle = selectedBg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // B. 셀카 사진 그리기
+        ctx.drawImage(capturedImage, 0, 0, canvas.width, canvas.height);
+
+        // C. 가상 정장 합성 (Vector SVG 렌더링)
+        const scale = parseFloat(document.getElementById('scaleSlider').value) / 100;
+        const yPos = parseInt(document.getElementById('ySlider').value) * 2;
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height - 150 + yPos);
+        ctx.scale(scale, scale);
+
+        // 정장 어깨/카라 드로잉 (실시간 렌더링)
+        ctx.fillStyle = outfitGraphics[currentGender].find(o => o.id === selectedOutfit)?.color || '#1e293b';
+        
+        // 어깨
+        ctx.beginPath();
+        ctx.moveTo(-250, 250);
+        ctx.quadraticCurveTo(-180, 0, -80, 20);
+        ctx.lineTo(0, 90);
+        ctx.lineTo(80, 20);
+        ctx.quadraticCurveTo(180, 0, 250, 250);
+        ctx.closePath();
+        ctx.fill();
+
+        // 셔츠/카라
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-60, 0);
+        ctx.lineTo(0, 80);
+        ctx.lineTo(60, 0);
+        ctx.lineTo(40, -20);
+        ctx.lineTo(0, 10);
+        ctx.lineTo(-40, -20);
+        ctx.closePath();
+        ctx.fill();
+
+        // 넥타이 (남성)
+        if (currentGender === 'man' && selectedOutfit !== 'suit3') {
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(-12, 15);
+            ctx.lineTo(12, 15);
+            ctx.lineTo(18, 180);
+            ctx.lineTo(0, 220);
+            ctx.lineTo(-18, 180);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    // 6. 이미지 저장
+    function downloadPhoto() {
+        const link = document.createElement('a');
+        link.download = '이력서_증명사진.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // 초기화
+    initCamera();
+    renderOutfits();
+</script>
+
+</body>
+</html>
