@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: bflow-live-class
+    runtime: node
+    plan: free
+    buildCommand: node --check classroom/server.cjs
+    startCommand: node classroom/server.cjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: ALLOWED_ORIGINS
+        value: https://e0o0juice-oss.github.io

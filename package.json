@@ -1,0 +1,8 @@
+{
+  "name": "bflow-live-class",
+  "private": true,
+  "version": "1.0.0",
+  "description": "BFLOW instructor-controlled workshop",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node classroom/server.cjs", "test": "node --test classroom/server.test.cjs" }
+}
