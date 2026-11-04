@@ -3,6 +3,7 @@ const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
+const instructorNotes=require('./notes.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const PORT=Number(process.env.PORT||8020);
 const MAX_SLIDE=27,TTL=12*60*60*1000;
@@ -31,9 +32,10 @@ const server=http.createServer(async(req,res)=>{try{
   let code;do{code=crypto.randomBytes(6).toString('hex').toUpperCase()}while(rooms.has(code));
   const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:600,remaining:600,end:null},clients:new Set(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
  }
- const match=u.pathname.match(/^\/api\/rooms\/([A-F0-9]{12})(?:\/(events|control))?$/);
+ const match=u.pathname.match(/^\/api\/rooms\/([A-F0-9]{12})(?:\/(events|control|notes))?$/);
  if(match){const room=rooms.get(match[1]);if(!room||room.expiresAt<Date.now())return json(res,404,{error:'수업이 없거나 종료되었습니다. 강사에게 새 참여 주소를 받아주세요.'});
   if(req.method==='GET'&&!match[2])return json(res,200,snapshot(room));
+  if(req.method==='GET'&&match[2]==='notes'){if(!validHost(room,req))return json(res,403,{error:'강사 권한이 필요합니다.'});return json(res,200,{notes:instructorNotes})}
   if(req.method==='GET'&&match[2]==='events'){
    if(room.clients.size>=60)return json(res,503,{error:'접속 가능한 인원을 초과했습니다.'});
    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Connection':'keep-alive','X-Accel-Buffering':'no',...headers});res.write('retry: 2000\ndata: '+JSON.stringify(snapshot(room))+'\n\n');room.clients.add(res);const keep=setInterval(()=>res.write(': heartbeat\n\n'),20000);req.on('close',()=>{clearInterval(keep);room.clients.delete(res)});return;
