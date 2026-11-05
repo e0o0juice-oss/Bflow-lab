@@ -21,14 +21,14 @@ async function body(req){if(!req.headers['content-type']?.startsWith('applicatio
 const server=http.createServer(async(req,res)=>{try{
  if(!originAllowed(req))return json(res,403,{error:'허용되지 않은 사이트입니다.'});
  if(req.headers.origin){res.setHeader('Access-Control-Allow-Origin',req.headers.origin);res.setHeader('Vary','Origin')}
- if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type,Authorization,X-Instructor-Key','Access-Control-Max-Age':'600',...headers});return res.end()}
+ if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type,Authorization','Access-Control-Max-Age':'600',...headers});return res.end()}
  const u=new URL(req.url,'http://localhost');
  if(u.pathname.startsWith('/api/')){
   const ip=req.socket.remoteAddress;const now=Date.now();let l=limits.get(ip);if(!l||l.until<now){l={count:0,until:now+60000};limits.set(ip,l)}if(++l.count>1000)return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
  }
  if(u.pathname==='/api/health'&&req.method==='GET')return json(res,200,{ok:true});
  if(u.pathname==='/api/rooms'&&req.method==='POST'){
-  await body(req);const key=process.env.INSTRUCTOR_ACCESS_KEY;if(!key||key.length<12)return json(res,503,{error:'서버에 강사 비밀번호 설정이 필요합니다.'});const actual=crypto.createHash('sha256').update(String(req.headers['x-instructor-key']||'')).digest();const expected=crypto.createHash('sha256').update(key).digest();if(!crypto.timingSafeEqual(actual,expected))return json(res,403,{error:'강사 비밀번호가 올바르지 않습니다.'});if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
+  await body(req);if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
   let code;do{code=String(crypto.randomInt(100000,1000000))}while(rooms.has(code));
   const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:600,remaining:600,end:null},clients:new Set(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
  }
