@@ -12,7 +12,9 @@ const assets={'/':'index.html','/index.html':'index.html','/workshop.css':'works
 const allowed=(process.env.ALLOWED_ORIGINS||'https://e0o0juice-oss.github.io').split(',').map(s=>s.trim());
 const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','Cache-Control':'no-store'};
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data))}
-function snapshot(room){return {index:room.index,maxIndex:room.maxIndex,revision:room.revision,timer:room.timer,expiresAt:room.expiresAt,ended:room.ended}}
+const pollOptions=['chatgpt','gemini','claude','none'];
+function pollSnapshot(room){const counts=Object.fromEntries(pollOptions.map(k=>[k,0]));for(const choices of room.votes.values())for(const key of choices)counts[key]++;return {counts,respondents:room.votes.size}}
+function snapshot(room){return {poll:pollSnapshot(room),index:room.index,maxIndex:room.maxIndex,revision:room.revision,timer:room.timer,expiresAt:room.expiresAt,ended:room.ended}}
 function publish(room){room.revision++;const event='data: '+JSON.stringify(snapshot(room))+'\n\n';for(const c of room.clients)c.write(event)}
 function end(room){room.ended=true;publish(room);for(const c of room.clients)c.end();rooms.delete(room.code)}
 function validHost(room,req){const token=(req.headers.authorization||'').replace(/^Bearer /,'');const digest=crypto.createHash('sha256').update(token).digest();return crypto.timingSafeEqual(digest,room.hostHash)}
@@ -30,11 +32,18 @@ const server=http.createServer(async(req,res)=>{try{
  if(u.pathname==='/api/rooms'&&req.method==='POST'){
   await body(req);if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
   let code;do{code=String(crypto.randomInt(100000,1000000))}while(rooms.has(code));
-  const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:600,remaining:600,end:null},clients:new Set(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
+  const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:600,remaining:600,end:null},clients:new Set(),votes:new Map(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
  }
- const match=u.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(events|control|notes|content\.js))?$/);
+ const match=u.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(events|control|notes|poll|content\.js))?$/);
  if(match){const room=rooms.get(match[1]);if(!room||room.expiresAt<Date.now())return json(res,404,{error:'수업이 없거나 종료되었습니다. 강사에게 새 참여 주소를 받아주세요.'});
   if(req.method==='GET'&&!match[2])return json(res,200,snapshot(room));
+  if(req.method==='POST'&&match[2]==='poll'){
+   if(room.index!==1)return json(res,409,{error:'지금은 AI 사용 경험을 응답하는 시간이 아닙니다.'});
+   const data=await body(req);if(!data||typeof data.voterId!=='string'||!/^[a-f0-9]{32}$/.test(data.voterId)||!Array.isArray(data.choices)||data.choices.length>4||data.choices.some(k=>!pollOptions.includes(k))||new Set(data.choices).size!==data.choices.length||(data.choices.includes('none')&&data.choices.length>1))return json(res,400,{error:'응답 항목을 확인해주세요.'});
+   if(data.choices.length){if(!room.votes.has(data.voterId)&&room.votes.size>=100)return json(res,503,{error:'응답 가능한 인원을 초과했습니다.'});room.votes.set(data.voterId,data.choices)}else room.votes.delete(data.voterId);
+   publish(room);return json(res,200,snapshot(room));
+  }
+
   if(req.method==='GET'&&match[2]==='content.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8',...headers});return res.end(fs.readFileSync(path.join(ROOT,'workshop-data.js'),'utf8')+'\nexport {help,steps};\n')}
   if(req.method==='GET'&&match[2]==='notes'){if(!validHost(room,req))return json(res,403,{error:'강사 권한이 필요합니다.'});return json(res,200,{notes:instructorNotes})}
   if(req.method==='GET'&&match[2]==='events'){
