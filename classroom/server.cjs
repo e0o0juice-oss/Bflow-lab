@@ -10,7 +10,7 @@ const PORT=Number(process.env.PORT||8020);
 const lessonOrder=[1,0,2,3,4,5,6,7,8];
 const lessonSlides=lessonOrder.flatMap(stage=>(stage===0?['idea','experience','do','prompt']:['idea','do','prompt']).map(type=>({type,stage})));
 const openingSurvey=s=>s.stage===0&&['idea','experience'].includes(s.type);
-const slidePlan=[{type:'cover',stage:0},...lessonSlides.filter(openingSurvey),...lessonSlides.filter(s=>!openingSurvey(s))];
+const slidePlan=[{type:'cover',stage:0},...lessonSlides.filter(openingSurvey),...lessonSlides.filter(s=>!openingSurvey(s)),{type:'closing',stage:8}];
 const POLL_SLIDE=slidePlan.findIndex(s=>s.stage===0&&s.type==='idea');
 const EXPERIENCE_SLIDE=slidePlan.findIndex(s=>s.type==='experience');
 const MAX_SLIDE=slidePlan.length-1,TTL=12*60*60*1000;
