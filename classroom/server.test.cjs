@@ -6,7 +6,7 @@ const state=await(await fetch(base+url)).json();assert.equal(state.index,0);asse
 for(const token of [null,'wrong']){assert.equal((await post(url+'/control',{action:'slide',index:5},token)).status,403);assert.equal((await fetch(base+url+'/notes',{headers:token?{Authorization:'Bearer '+token}:{}})).status,403)}
 const privateNotes=await(await fetch(base+url+'/notes',{headers:{Authorization:'Bearer '+room.hostToken}})).json();assert.equal(privateNotes.notes.length,9);assert.equal(typeof privateNotes.notes[0].talk,'string');
 assert.equal((await fetch(base+'/workshop-data.js')).status,404);assert.equal((await fetch(base+'/api/rooms/000000/content.js')).status,404);const publicData=await(await fetch(base+url+'/content.js')).text();assert(publicData.includes('export {help,steps}'));assert(!publicData.includes(privateNotes.notes[0].talk));assert(!publicData.includes(',talk:'));assert.equal((await fetch(base+'/classroom/notes.cjs')).status,404);assert(!JSON.stringify(state).includes(privateNotes.notes[0].talk));
-assert.equal((await post(url+'/control',{action:'slide',index:28},room.hostToken)).status,400);
+assert.equal((await post(url+'/control',{action:'slide',index:29},room.hostToken)).status,400);
 assert.equal((await post(url+'/control',{action:'slide',index:-1},room.hostToken)).status,400);
 const events=await fetch(base+url+'/events');reader=events.body.getReader();assert.match(new TextDecoder().decode((await reader.read()).value),/"index":0/);
 let next=await(await post(url+'/control',{action:'slide',index:3},room.hostToken)).json();assert.equal(next.maxIndex,3);assert.match(new TextDecoder().decode((await reader.read()).value),/"index":3/);
@@ -19,6 +19,11 @@ tally=await(await post(url+'/poll',{voterId:secondVoter,choices:['none']})).json
 tally=await(await post(url+'/poll',{voterId:voter,choices:['claude']})).json();assert.equal(tally.poll.counts.chatgpt,0);assert.equal(tally.poll.counts.claude,1);
 tally=await(await post(url+'/poll',{voterId:voter,choices:[]})).json();assert.equal(tally.poll.respondents,1);assert.equal(tally.poll.counts.claude,0);assert(!JSON.stringify(tally).includes(secondVoter));
 await post(url+'/control',{action:'slide',index:2},room.hostToken);assert.equal((await post(url+'/poll',{voterId:voter,choices:['chatgpt']})).status,409);await post(url+'/control',{action:'slide',index:4},room.hostToken);assert.equal((await(await fetch(base+url)).json()).poll.counts.none,1);
+assert.equal((await post(url+'/experience-poll',{voterId:voter,choices:['ask']})).status,409);await post(url+'/control',{action:'slide',index:5},room.hostToken);
+assert.equal((await post(url+'/poll',{voterId:voter,choices:['chatgpt']})).status,409);assert.equal((await post(url+'/experience-poll',{voterId:voter,choices:['none','ask']})).status,400);
+let experience=await(await post(url+'/experience-poll',{voterId:voter,choices:['ask','writing','image']})).json();assert.equal(experience.experiencePoll.respondents,1);assert.equal(experience.experiencePoll.counts.image,1);assert.equal(experience.poll.counts.none,1);
+experience=await(await post(url+'/experience-poll',{voterId:voter,choices:['automation']})).json();assert.equal(experience.experiencePoll.respondents,1);assert.equal(experience.experiencePoll.counts.ask,0);assert.equal(experience.experiencePoll.counts.automation,1);
+experience=await(await post(url+'/experience-poll',{voterId:voter,choices:[]})).json();assert.equal(experience.experiencePoll.respondents,0);
 assert.equal((await post(url+'/control',{action:'timer',command:'set',minutes:0},room.hostToken)).status,400);
 for(const command of ['set','start','pause','reset']){next=await(await post(url+'/control',{action:'timer',command,minutes:2},room.hostToken)).json();assert.equal(next.timer.duration,120);if(command==='start')assert(next.timer.end>Date.now());else assert.equal(next.timer.end,null)}
 const other=await(await post('/api/rooms',{},null)).json();assert.equal(other.state.poll.respondents,0);assert.equal((await post(url+'/control',{action:'slide',index:2},other.hostToken)).status,403);assert.equal((await fetch(base+url+'/notes',{headers:{Authorization:'Bearer '+other.hostToken}})).status,403);
