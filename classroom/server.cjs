@@ -53,7 +53,7 @@ const server=http.createServer(async(req,res)=>{try{
   }
 
   if(req.method==='GET'&&match[2]==='content.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8',...headers});return res.end(fs.readFileSync(path.join(ROOT,'workshop-data.js'),'utf8')+'\nexport {help,steps};\nexport const lessonOrder='+JSON.stringify(lessonOrder)+';\nexport const slidePlan='+JSON.stringify(slidePlan)+';\n')}
-  if(req.method==='GET'&&match[2]==='notes'){if(!validHost(room,req))return json(res,403,{error:'강사 권한이 필요합니다.'});return json(res,200,{notes:instructorNotes})}
+  if(req.method==='GET'&&match[2]==='notes'){if(!validHost(room,req))return json(res,403,{error:'강사 권한이 필요합니다.'});return json(res,200,{notes:instructorNotes,cover:instructorNotes.cover})}
   if(req.method==='GET'&&match[2]==='events'){
    if(room.clients.size>=60)return json(res,503,{error:'접속 가능한 인원을 초과했습니다.'});
    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Connection':'keep-alive','X-Accel-Buffering':'no',...headers});res.write('retry: 2000\ndata: '+JSON.stringify(snapshot(room))+'\n\n');room.clients.add(res);const keep=setInterval(()=>res.write(': heartbeat\n\n'),20000);req.on('close',()=>{clearInterval(keep);room.clients.delete(res)});return;
