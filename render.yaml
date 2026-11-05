@@ -11,3 +11,5 @@ services:
         value: 22.16.0
       - key: ALLOWED_ORIGINS
         value: https://e0o0juice-oss.github.io
+      - key: INSTRUCTOR_ACCESS_KEY
+        sync: false
