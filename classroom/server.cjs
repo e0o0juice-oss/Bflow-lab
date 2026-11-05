@@ -8,7 +8,9 @@ const {createBoard,boardSnapshot,disposeBoard,handleBoard}=require('./board.cjs'
 const ROOT=path.resolve(__dirname,'..');
 const PORT=Number(process.env.PORT||8020);
 const lessonOrder=[1,0,2,3,4,5,6,7,8];
-const slidePlan=[{type:'cover',stage:lessonOrder[0]},...lessonOrder.flatMap(stage=>(stage===0?['idea','experience','do','prompt']:['idea','do','prompt']).map(type=>({type,stage})))];
+const lessonSlides=lessonOrder.flatMap(stage=>(stage===0?['idea','experience','do','prompt']:['idea','do','prompt']).map(type=>({type,stage})));
+const openingSurvey=s=>s.stage===0&&['idea','experience'].includes(s.type);
+const slidePlan=[{type:'cover',stage:0},...lessonSlides.filter(openingSurvey),...lessonSlides.filter(s=>!openingSurvey(s))];
 const POLL_SLIDE=slidePlan.findIndex(s=>s.stage===0&&s.type==='idea');
 const EXPERIENCE_SLIDE=slidePlan.findIndex(s=>s.type==='experience');
 const MAX_SLIDE=slidePlan.length-1,TTL=12*60*60*1000;
@@ -38,7 +40,7 @@ const server=http.createServer(async(req,res)=>{try{
  if(u.pathname==='/api/rooms'&&req.method==='POST'){
   await body(req);if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
   let code;do{code=String(crypto.randomInt(100000,1000000))}while(rooms.has(code));
-  const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:1200,remaining:1200,end:null},clients:new Set(),votes:new Map(),experienceVotes:new Map(),board:createBoard(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
+  const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:600,remaining:600,end:null},clients:new Set(),votes:new Map(),experienceVotes:new Map(),board:createBoard(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
  }
  const match=u.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(events|control|notes|poll|experience-poll|content\.js|board(?:\/export|\/images\/[a-f0-9]{32}|\/posts\/[a-f0-9]{32}\/delete)?))?$/);
  if(match){const room=rooms.get(match[1]);if(!room||room.expiresAt<Date.now())return json(res,404,{error:'수업이 없거나 종료되었습니다. 강사에게 새 참여 주소를 받아주세요.'});
