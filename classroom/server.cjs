@@ -8,7 +8,7 @@ const ROOT=path.resolve(__dirname,'..');
 const PORT=Number(process.env.PORT||8020);
 const MAX_SLIDE=27,TTL=12*60*60*1000;
 const rooms=new Map(),limits=new Map();
-const assets={'/':'index.html','/index.html':'index.html','/workshop.css':'workshop.css','/workshop.js':'workshop.js'};
+const assets={'/':'index.html','/index.html':'index.html','/workshop.css':'workshop.css','/workshop.js':'workshop.js','/vendor/qrcode.js':'vendor/qrcode.js'};
 const allowed=(process.env.ALLOWED_ORIGINS||'https://e0o0juice-oss.github.io').split(',').map(s=>s.trim());
 const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','Cache-Control':'no-store'};
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data))}
@@ -29,10 +29,10 @@ const server=http.createServer(async(req,res)=>{try{
  if(u.pathname==='/api/health'&&req.method==='GET')return json(res,200,{ok:true});
  if(u.pathname==='/api/rooms'&&req.method==='POST'){
   await body(req);const key=process.env.INSTRUCTOR_ACCESS_KEY;if(!key||key.length<12)return json(res,503,{error:'서버에 강사 비밀번호 설정이 필요합니다.'});const actual=crypto.createHash('sha256').update(String(req.headers['x-instructor-key']||'')).digest();const expected=crypto.createHash('sha256').update(key).digest();if(!crypto.timingSafeEqual(actual,expected))return json(res,403,{error:'강사 비밀번호가 올바르지 않습니다.'});if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
-  let code;do{code=crypto.randomBytes(6).toString('hex').toUpperCase()}while(rooms.has(code));
+  let code;do{code=String(crypto.randomInt(100000,1000000))}while(rooms.has(code));
   const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:600,remaining:600,end:null},clients:new Set(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
  }
- const match=u.pathname.match(/^\/api\/rooms\/([A-F0-9]{12})(?:\/(events|control|notes|content\.js))?$/);
+ const match=u.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(events|control|notes|content\.js))?$/);
  if(match){const room=rooms.get(match[1]);if(!room||room.expiresAt<Date.now())return json(res,404,{error:'수업이 없거나 종료되었습니다. 강사에게 새 참여 주소를 받아주세요.'});
   if(req.method==='GET'&&!match[2])return json(res,200,snapshot(room));
   if(req.method==='GET'&&match[2]==='content.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8',...headers});return res.end(fs.readFileSync(path.join(ROOT,'workshop-data.js'),'utf8')+'\nexport {help,steps};\n')}
