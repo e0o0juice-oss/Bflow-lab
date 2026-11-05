@@ -4,24 +4,25 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const instructorNotes=require('./notes.cjs');
+const {createBoard,boardSnapshot,disposeBoard,handleBoard}=require('./board.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const PORT=Number(process.env.PORT||8020);
 const lessonOrder=[1,0,2,3,4,5,6,7,8];
 const POLL_SLIDE=1+lessonOrder.indexOf(0)*3;
 const MAX_SLIDE=27,TTL=12*60*60*1000;
 const rooms=new Map(),limits=new Map();
-const assets={'/':'index.html','/index.html':'index.html','/workshop.css':'workshop.css','/workshop.js':'workshop.js','/vendor/qrcode.js':'vendor/qrcode.js'};
+const assets={'/':'index.html','/index.html':'index.html','/workshop.css':'workshop.css','/workshop.js':'workshop.js','/board.js':'board.js','/vendor/qrcode.js':'vendor/qrcode.js'};
 const allowed=(process.env.ALLOWED_ORIGINS||'https://e0o0juice-oss.github.io').split(',').map(s=>s.trim());
 const headers={'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','Cache-Control':'no-store'};
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...headers});res.end(JSON.stringify(data))}
 const pollOptions=['chatgpt','gemini','claude','none'];
 function pollSnapshot(room){const counts=Object.fromEntries(pollOptions.map(k=>[k,0]));for(const choices of room.votes.values())for(const key of choices)counts[key]++;return {counts,respondents:room.votes.size}}
-function snapshot(room){return {poll:pollSnapshot(room),index:room.index,maxIndex:room.maxIndex,revision:room.revision,timer:room.timer,expiresAt:room.expiresAt,ended:room.ended}}
+function snapshot(room){return {board:boardSnapshot(room),poll:pollSnapshot(room),index:room.index,maxIndex:room.maxIndex,revision:room.revision,timer:room.timer,expiresAt:room.expiresAt,ended:room.ended}}
 function publish(room){room.revision++;const event='data: '+JSON.stringify(snapshot(room))+'\n\n';for(const c of room.clients)c.write(event)}
-function end(room){room.ended=true;publish(room);for(const c of room.clients)c.end();rooms.delete(room.code)}
+function end(room){disposeBoard(room);room.ended=true;publish(room);for(const c of room.clients)c.end();rooms.delete(room.code)}
 function validHost(room,req){const token=(req.headers.authorization||'').replace(/^Bearer /,'');const digest=crypto.createHash('sha256').update(token).digest();return crypto.timingSafeEqual(digest,room.hostHash)}
 function originAllowed(req){const origin=req.headers.origin;if(!origin)return true;let own;try{own=new URL(origin)}catch{return false}return allowed.includes(origin)||own.host===req.headers.host}
-async function body(req){if(!req.headers['content-type']?.startsWith('application/json'))throw Object.assign(Error('JSON 요청이 필요합니다.'),{status:415});let text='';for await(const chunk of req){text+=chunk;if(Buffer.byteLength(text)>8192)throw Object.assign(Error('요청이 너무 큽니다.'),{status:413})}try{return JSON.parse(text||'{}')}catch{throw Object.assign(Error('요청 형식이 올바르지 않습니다.'),{status:400})}}
+function body(req,maxBytes=8192){if(!req.headers['content-type']?.startsWith('application/json'))return Promise.reject(Object.assign(Error('JSON 요청이 필요합니다.'),{status:415}));return new Promise((resolve,reject)=>{let chunks=[],size=0,tooLarge=false;req.on('data',chunk=>{if(tooLarge)return;size+=chunk.length;if(size>maxBytes){tooLarge=true;chunks=[];reject(Object.assign(Error('요청이 너무 큽니다. 이미지 크기를 줄여주세요.'),{status:413}))}else chunks.push(chunk)});req.on('end',()=>{if(tooLarge)return;try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}'))}catch{reject(Object.assign(Error('요청 형식이 올바르지 않습니다.'),{status:400}))}});req.on('error',reject)})}
 const server=http.createServer(async(req,res)=>{try{
  if(!originAllowed(req))return json(res,403,{error:'허용되지 않은 사이트입니다.'});
  if(req.headers.origin){res.setHeader('Access-Control-Allow-Origin',req.headers.origin);res.setHeader('Vary','Origin')}
@@ -34,10 +35,11 @@ const server=http.createServer(async(req,res)=>{try{
  if(u.pathname==='/api/rooms'&&req.method==='POST'){
   await body(req);if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
   let code;do{code=String(crypto.randomInt(100000,1000000))}while(rooms.has(code));
-  const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:1200,remaining:1200,end:null},clients:new Set(),votes:new Map(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
+  const hostToken=crypto.randomBytes(32).toString('hex');const room={code,hostHash:crypto.createHash('sha256').update(hostToken).digest(),index:0,maxIndex:0,revision:1,timer:{duration:1200,remaining:1200,end:null},clients:new Set(),votes:new Map(),board:createBoard(),expiresAt:Date.now()+TTL,ended:false};rooms.set(code,room);return json(res,201,{code,hostToken,state:snapshot(room)});
  }
- const match=u.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(events|control|notes|poll|content\.js))?$/);
+ const match=u.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(events|control|notes|poll|content\.js|board(?:\/export|\/images\/[a-f0-9]{32}|\/posts\/[a-f0-9]{32}\/delete)?))?$/);
  if(match){const room=rooms.get(match[1]);if(!room||room.expiresAt<Date.now())return json(res,404,{error:'수업이 없거나 종료되었습니다. 강사에게 새 참여 주소를 받아주세요.'});
+  if(match[2]?.startsWith('board'))return await handleBoard(req,res,room,match[2],{json,body,publish,validHost});
   if(req.method==='GET'&&!match[2])return json(res,200,snapshot(room));
   if(req.method==='POST'&&match[2]==='poll'){
    if(room.index!==POLL_SLIDE)return json(res,409,{error:'지금은 AI 사용 경험을 응답하는 시간이 아닙니다.'});
@@ -67,7 +69,7 @@ const server=http.createServer(async(req,res)=>{try{
    else return json(res,400,{error:'지원하지 않는 동작입니다.'});publish(room);return json(res,200,snapshot(room));
   }
  }
- if(req.method==='GET'&&assets[u.pathname]){const file=assets[u.pathname];const ext=path.extname(file);const type={'.html':'text/html','.css':'text/css','.js':'text/javascript'}[ext];res.writeHead(200,{'Content-Type':type+'; charset=utf-8',...headers,'Content-Security-Policy':"default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"});fs.createReadStream(path.join(ROOT,file)).pipe(res);return}
+ if(req.method==='GET'&&assets[u.pathname]){const file=assets[u.pathname];const ext=path.extname(file);const type={'.html':'text/html','.css':'text/css','.js':'text/javascript'}[ext];res.writeHead(200,{'Content-Type':type+'; charset=utf-8',...headers,'Content-Security-Policy':"default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"});fs.createReadStream(path.join(ROOT,file)).pipe(res);return}
  json(res,404,{error:'찾을 수 없는 주소입니다.'});
  }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e.status?e.message:'서버 오류입니다. 다시 시도해주세요.'});else res.end()}
 });
