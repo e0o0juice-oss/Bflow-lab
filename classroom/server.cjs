@@ -28,6 +28,7 @@ function end(room){disposeBoard(room);room.ended=true;publish(room);for(const c 
 function validHost(room,req){const token=(req.headers.authorization||'').replace(/^Bearer /,'');const digest=crypto.createHash('sha256').update(token).digest();return crypto.timingSafeEqual(digest,room.hostHash)}
 function originAllowed(req){const origin=req.headers.origin;if(!origin)return true;let own;try{own=new URL(origin)}catch{return false}return allowed.includes(origin)||own.host===req.headers.host}
 function body(req,maxBytes=8192){if(!req.headers['content-type']?.startsWith('application/json'))return Promise.reject(Object.assign(Error('JSON 요청이 필요합니다.'),{status:415}));return new Promise((resolve,reject)=>{let chunks=[],size=0,tooLarge=false;req.on('data',chunk=>{if(tooLarge)return;size+=chunk.length;if(size>maxBytes){tooLarge=true;chunks=[];reject(Object.assign(Error('요청이 너무 큽니다. 이미지 크기를 줄여주세요.'),{status:413}))}else chunks.push(chunk)});req.on('end',()=>{if(tooLarge)return;try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}'))}catch{reject(Object.assign(Error('요청 형식이 올바르지 않습니다.'),{status:400}))}});req.on('error',reject)})}
+function lessonModule(){return fs.readFileSync(path.join(ROOT,'workshop-data.js'),'utf8')+'\nexport {help,steps};\nexport const lessonOrder='+JSON.stringify(lessonOrder)+';\nexport const slidePlan='+JSON.stringify(slidePlan)+';\n'}
 const server=http.createServer(async(req,res)=>{try{
  if(!originAllowed(req))return json(res,403,{error:'허용되지 않은 사이트입니다.'});
  if(req.headers.origin){res.setHeader('Access-Control-Allow-Origin',req.headers.origin);res.setHeader('Vary','Origin')}
@@ -36,6 +37,7 @@ const server=http.createServer(async(req,res)=>{try{
  if(u.pathname.startsWith('/api/')){
   const ip=req.socket.remoteAddress;const now=Date.now();let l=limits.get(ip);if(!l||l.until<now){l={count:0,until:now+60000};limits.set(ip,l)}if(++l.count>1000)return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
  }
+ if(u.pathname==='/review-content.js'&&req.method==='GET'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8',...headers});return res.end(lessonModule())}
  if(u.pathname==='/api/health'&&req.method==='GET')return json(res,200,{ok:true});
  if(u.pathname==='/api/rooms'&&req.method==='POST'){
   await body(req);if(rooms.size>=100)return json(res,503,{error:'현재 수업이 많습니다. 잠시 후 다시 시도하세요.'});
@@ -54,7 +56,7 @@ const server=http.createServer(async(req,res)=>{try{
    publish(room);return json(res,200,snapshot(room));
   }
 
-  if(req.method==='GET'&&match[2]==='content.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8',...headers});return res.end(fs.readFileSync(path.join(ROOT,'workshop-data.js'),'utf8')+'\nexport {help,steps};\nexport const lessonOrder='+JSON.stringify(lessonOrder)+';\nexport const slidePlan='+JSON.stringify(slidePlan)+';\n')}
+  if(req.method==='GET'&&match[2]==='content.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8',...headers});return res.end(lessonModule())}
   if(req.method==='GET'&&match[2]==='notes'){if(!validHost(room,req))return json(res,403,{error:'강사 권한이 필요합니다.'});return json(res,200,{notes:instructorNotes,cover:instructorNotes.cover})}
   if(req.method==='GET'&&match[2]==='events'){
    if(room.clients.size>=60)return json(res,503,{error:'접속 가능한 인원을 초과했습니다.'});
@@ -81,4 +83,4 @@ const server=http.createServer(async(req,res)=>{try{
 });
 const cleanup=setInterval(()=>{for(const r of rooms.values())if(r.expiresAt<Date.now())end(r);for(const [ip,l]of limits)if(l.until<Date.now())limits.delete(ip)},60000);cleanup.unref();
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log(`BFLOW classroom listening on port ${PORT}`));
-module.exports={server,rooms};
+module.exports={server,rooms,lessonModule};
