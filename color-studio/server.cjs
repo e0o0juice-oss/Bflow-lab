@@ -795,7 +795,8 @@ function createApp({
         "/color-studio/studio.css": ["studio.css", "text/css"],
         "/color-studio/studio.js": ["studio.js", "text/javascript"],
         "/color-studio/content.js": ["content.js", "text/javascript"],
-        "/color-studio/qr.js": ["../vendor/qrcode.js", "text/javascript"],
+        "/color-studio/qr.js": ["vendor/qrcode.js", "text/javascript"],
+        "/color-studio/QR-LICENSE.txt": ["vendor/LICENSE.txt", "text/plain"],
         "/color-studio/sw.js": ["sw.js", "text/javascript"],
       };
       if (u.pathname === "/") {

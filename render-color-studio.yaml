@@ -5,11 +5,12 @@ services:
   - type: web
     name: bflow-color-studio
     runtime: node
+    rootDir: color-studio
     plan: starter
     numInstances: 1
     autoDeploy: false
-    buildCommand: node --check color-studio/server.cjs && node --test color-studio/server.test.cjs
-    startCommand: node color-studio/server.cjs
+    buildCommand: node --check server.cjs && node --test server.test.cjs
+    startCommand: node server.cjs
     healthCheckPath: /color-studio/api/health
     envVars:
       - key: NODE_VERSION
