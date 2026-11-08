@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>색의 발견 · 컬러 스튜디오</title>
+    <link rel="stylesheet" href="studio.css" />
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="#home"
+        ><span class="brand-icon">◒</span> 색의 발견
+        <small>COLOR STUDIO</small></a
+      >
+      <nav aria-label="화면 선택">
+        <button data-view="home" class="active">스튜디오</button
+        ><button data-view="lesson">강의 화면</button
+        ><button data-view="workbook">나의 워크북</button>
+      </nav>
+      <span class="draft" id="session-label">COLOR STUDIO · WORKSHOP</span>
+    </header>
+    <div id="connection-bar" class="connection-bar" role="status" hidden></div>
+    <div id="notice" role="status" hidden></div>
+    <main>
+      <section id="home" class="view active">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">PERSONAL COLOR · HANDS-ON WORKSHOP</p>
+            <h1>나에게 어울리는 색을<br />발견하는 시간<span>.</span></h1>
+            <p class="lead">
+              좋아하는 색에서 시작해, 나를 편안하게 만드는 색까지.<br />직접
+              대어 보고, 함께 관찰하며 나만의 컬러 노트를 완성해요.
+            </p>
+            <div class="actions">
+              <button class="primary" data-view="workbook">
+                나의 워크북 시작하기 <span>↗</span></button
+              ><button class="text-button" data-view="lesson">
+                강의 화면 살펴보기 →
+              </button>
+            </div>
+            <div class="hero-meta">
+              <span>180분의 발견</span><i></i><span>실물 컬러 비교</span><i></i
+              ><span>함께 쓰는 컬러 노트</span>
+            </div>
+          </div>
+          <div
+            class="fabric-art"
+            role="img"
+            aria-label="코랄, 옐로, 라벤더, 블루, 올리브, 테라코타, 버건디 천이 펼쳐진 컬러 스튜디오 이미지"
+          >
+            <div class="fabric coral"></div>
+            <div class="fabric yellow"></div>
+            <div class="fabric lavender"></div>
+            <div class="fabric blue"></div>
+            <div class="fabric olive"></div>
+            <div class="fabric terra"></div>
+            <div class="fabric wine"></div>
+            <span class="art-label"
+              >A LITTLE COLOR,<br />A NEW PERSPECTIVE.</span
+            ><span class="art-number">01 — 04 / THE SEASONS</span>
+          </div>
+        </div>
+        <section class="entry-panel" id="entry-panel">
+          <div>
+            <p class="eyebrow">JOIN THE WORKSHOP</p>
+            <h2>함께 색을 발견해요.</h2>
+            <p>강사가 알려준 6자리 코드로 수업에 참여하세요.</p>
+          </div>
+          <form id="join-form">
+            <label for="room-code">참여 코드</label
+            ><input
+              id="room-code"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              placeholder="6자리 코드"
+              required
+            /><label for="join-name">수업에서 사용할 별명</label
+            ><input
+              id="join-name"
+              maxlength="24"
+              placeholder="실명 없이 별명으로 참여해요"
+              required
+            /><label for="join-group">나의 조</label
+            ><select id="join-group">
+              <option value="1">1조</option>
+              <option value="2">2조</option>
+              <option value="3">3조</option>
+              <option value="4">4조</option>
+              <option value="5">5조</option>
+              <option value="6">6조</option>
+            </select>
+            <p class="muted">
+              조는 참여 후 고정됩니다. 같은 조에만 게시물과 별명이 공개돼요.
+              개인 관찰 기록은 본인에게만 제공됩니다.
+            </p>
+            <button class="primary wide" type="submit">수업 참여하기 →</button>
+          </form>
+          <div class="entry-teacher">
+            <h3>수업을 진행하시나요?</h3>
+            <p>
+              수업을 만든 브라우저에 강사 권한이 저장됩니다.<br />발표 화면은
+              별도 창으로 열어주세요.
+            </p>
+            <button class="outline-button" id="create-room">
+              강사 · 새 수업 만들기 ↗</button
+            ><button class="text-button" id="try-workbook">
+              개인 연습으로 먼저 살펴보기 →
+            </button>
+            <p class="muted">연습 기록은 이 기기에만 저장됩니다.</p>
+          </div>
+        </section>
+        <div class="intro-strip">
+          <span class="eyebrow">TODAY’S JOURNEY</span>
+          <p>색을 배우고. 나를 관찰하고. 일상에 연결하기.</p>
+          <span>총 180분 · 휴식 포함</span>
+        </div>
+        <div class="journey">
+          <article>
+            <span>01 / EXPLORE</span>
+            <h2>좋아하는 색에서<br />출발해요.</h2>
+            <p>
+              세 가지 색으로 표현한 나의 첫 코디.<br />색의 성질을 배우며 새로운
+              눈으로 바라봐요.
+            </p>
+            <div class="palette">
+              <i style="--c: #e98c7b"></i><i style="--c: #e9d780"></i
+              ><i style="--c: #a8a0c4"></i><i style="--c: #7695b3"></i>
+            </div>
+          </article>
+          <article>
+            <span>02 / OBSERVE</span>
+            <h2>거울 앞에서,<br />함께 발견해요.</h2>
+            <p>
+              실물 색을 번갈아 대보고 얼굴의 변화를 관찰해요.<br />나와 조원의
+              생각이 달라도 괜찮아요.
+            </p>
+            <div class="sample-lines"><i></i><i></i><i></i></div>
+          </article>
+          <article>
+            <span>03 / CONNECT</span>
+            <h2>나의 일상에<br />색을 더해요.</h2>
+            <p>
+              입고 싶은 옷부터 작은 액세서리까지.<br />원하는 이미지와 오늘의
+              발견을 연결해요.
+            </p>
+            <div class="palette">
+              <i style="--c: #a85339"></i><i style="--c: #7d8050"></i
+              ><i style="--c: #284fb9"></i><i style="--c: #773744"></i>
+            </div>
+          </article>
+        </div>
+        <section class="schedule">
+          <div>
+            <p class="eyebrow">THE WORKSHOP PLAN</p>
+            <h2>오늘의 3시간</h2>
+            <p>강의와 실습이 자연스럽게 이어지는 아홉 단계.</p>
+          </div>
+          <ol id="schedule-list"></ol>
+        </section>
+        <footer>
+          색은 정답보다 관찰에 가까워요.<span
+            >화면의 색은 개념 학습용입니다. 진단 활동은 실물 색을 기준으로
+            진행해요.</span
+          >
+        </footer>
+      </section>
+      <section id="teacher" class="view">
+        <div class="teacher-heading">
+          <div>
+            <p class="eyebrow">INSTRUCTOR STUDIO</p>
+            <h1>함께 발견하는 시간<span>.</span></h1>
+            <p class="muted">
+              진행은 이곳에서. 학생에게는 활동 화면만 전달돼요.
+            </p>
+          </div>
+          <div class="teacher-links">
+            <button class="primary" id="open-presentation">
+              발표 화면 새 창으로 ↗</button
+            ><button class="outline-button" id="teacher-workbook">
+              참여 화면 안내 보기
+            </button>
+          </div>
+        </div>
+        <div id="teacher-content"></div>
+      </section>
+      <section id="lesson" class="view">
+        <div id="presentation-room"></div>
+        <div id="presentation-post" hidden></div>
+        <div class="lesson-top">
+          <span class="eyebrow">COLOR LAB / 03</span
+          ><span>색상 · 명도 · 채도 · 색조 <b>20 MIN</b></span>
+        </div>
+        <div class="lesson-title">
+          <p class="eyebrow">밝기와 선명함은 서로 다른 이야기</p>
+          <h1>밝은 색은 언제나<br />선명한 색일까요?</h1>
+          <p>
+            두 색의 밝기와 선명함을 따로 살펴보세요. 어떤 차이가 느껴지나요?
+          </p>
+        </div>
+        <div class="comparison">
+          <div style="background: #edd3d4">
+            <span>A</span><strong>밝고 부드러운</strong>
+          </div>
+          <div style="background: #ce3655; color: #fff">
+            <span>B</span><strong>선명하고 또렷한</strong>
+          </div>
+        </div>
+        <div class="lesson-task">
+          <span class="round">↔</span>
+          <p>
+            <b>옆 사람과 한 문장씩 나눠보세요.</b><br />“나는 ___색이 더 밝게 /
+            선명하게 느껴져요. 왜냐하면…”
+          </p>
+          <span class="lesson-clock">관찰 → 이야기 → 실물 비교</span>
+        </div>
+        <div class="lesson-bottom">
+          <span
+            >화면 색은 기기마다 달라요. 실물 키트에서 비슷한 예를
+            찾아보세요.</span
+          >
+          <div>
+            <button id="lesson-prev" aria-label="이전 강의">←</button
+            ><span id="slide-count">03 / 09</span
+            ><button id="lesson-next" aria-label="다음 강의">→</button>
+          </div>
+        </div>
+      </section>
+      <section id="workbook" class="view">
+        <aside class="workbook-aside">
+          <p class="eyebrow">MY COLOR WORKBOOK</p>
+          <h1>나를 발견하는<br />컬러 노트<span>.</span></h1>
+          <p>
+            관찰하고, 기록하고, 다시 살펴봐요.<br />서로 다른 의견도 소중한
+            발견이에요.
+          </p>
+          <div class="group-box">
+            <label for="group">나의 조</label
+            ><select id="group">
+              <option>1조</option>
+              <option>2조</option>
+              <option>3조</option>
+              <option>4조</option>
+              <option>5조</option>
+              <option>6조</option></select
+            ><small id="group-status">개인 연습 · 수업 미연결</small>
+          </div>
+          <nav class="steps" aria-label="워크북 활동">
+            <button data-tab="favorite">01 <span>내가 좋아하는 색</span></button
+            ><button data-tab="concepts">
+              03 <span>색의 개념 실험실</span></button
+            ><button data-tab="demo">04 <span>관찰 방법과 준비</span></button
+            ><button data-tab="roles">05 <span>우리 조 역할</span></button
+            ><button data-tab="observe" class="active">
+              06 <span>실물 색 관찰하기</span><i>기록 중</i></button
+            ><button data-tab="style">
+              08 <span>원하는 이미지와 스타일</span></button
+            ><button data-tab="summary">
+              09 <span>나의 발견 모아보기</span>
+            </button>
+          </nav>
+          <div class="aside-note">
+            작은 차이부터 천천히.<br />유형을 확정하기보다 오늘의 관찰을 남겨요.
+          </div>
+        </aside>
+        <div class="workbook-paper">
+          <div id="activity-banner"></div>
+          <div class="paper-top">
+            <span>STEP <b id="step-label">06</b> / 09</span
+            ><span id="save-status" role="status">이 기기에 자동 저장</span>
+          </div>
+          <div id="tab-basics" class="tab"></div>
+          <div id="tab-concepts" class="tab"></div>
+          <div id="tab-demo" class="tab"></div>
+          <div id="tab-roles" class="tab"></div>
+          <div id="tab-break" class="tab"></div>
+          <div id="tab-observe" class="tab active">
+            <p class="eyebrow">OBSERVE TOGETHER</p>
+            <h2>어떤 색에서<br />얼굴이 자연스러웠나요?</h2>
+            <p class="muted">
+              거울로 먼저 보고, 조원의 이야기도 들어보세요.<br />한 색상 비교를
+              마칠 때마다 기록하면 돼요.
+            </p>
+            <div class="family-tabs" role="group" aria-label="비교 색상">
+              <button class="active" data-family="빨강">01 빨강</button
+              ><button data-family="핑크">02 핑크</button
+              ><button data-family="초록">03 초록</button
+              ><button data-family="파랑">04 파랑</button>
+            </div>
+            <div class="observation-guide">
+              <b>이번에 볼 부분</b>
+              <p>
+                피부가 균일해 보이나요? 눈 밑·입가의 그림자는 어떤가요?<br />색보다
+                얼굴이 먼저 보이나요?
+              </p>
+            </div>
+            <div class="example-label">
+              수업용 예시 색 · 실물 키트 구성은 강사가 확인해 설정해요.
+            </div>
+            <div id="observe-swatches" class="observe-swatches"></div>
+            <fieldset>
+              <legend>01 <b>내가 관찰했을 때</b></legend>
+              <div id="self-options" class="choice-row"></div>
+              <label class="field-label" for="self-note"
+                >어떤 변화가 보였나요?</label
+              ><textarea
+                id="self-note"
+                placeholder="예: A에서 입가의 그림자가 덜 보였어요."
+                rows="2"
+              ></textarea>
+            </fieldset>
+            <fieldset>
+              <legend>02 <b>조원이 관찰했을 때</b></legend>
+              <div id="peer-options" class="choice-row"></div>
+              <label class="field-label" for="peer-note"
+                >다른 의견도 그대로 남겨요.</label
+              ><textarea
+                id="peer-note"
+                placeholder="예: 한 명은 B가 더 또렷하다고 했고, 한 명은 비슷하다고 했어요."
+                rows="2"
+              ></textarea>
+            </fieldset>
+            <button class="primary wide" id="next-family">
+              기록하고 다음 색상으로 →
+            </button>
+            <p class="privacy-note" id="storage-note">
+              개인 연습 기록은 현재 브라우저에 저장됩니다. 수업 참여 시 본인
+              기록을 서버에도 저장해요.
+            </p>
+          </div>
+          <div id="tab-favorite" class="tab">
+            <p class="eyebrow">MY FAVORITE COLORS</p>
+            <h2>내가 좋아하는 색<br />3가지를 골라주세요.</h2>
+            <p class="muted">
+              고른 순서대로 모자, 상의, 하의가 돼요.<br />완료를 누르면 나의
+              캐릭터가 나타나요.
+            </p>
+            <div class="gender" role="group" aria-label="캐릭터 선택">
+              <button data-gender="male" class="selected">남자 캐릭터</button
+              ><button data-gender="female">여자 캐릭터</button>
+            </div>
+            <div id="favorite-colors"></div>
+            <div id="selected-colors"></div>
+            <button class="primary wide" id="finish-favorite" disabled>
+              3가지 색을 선택해주세요
+            </button>
+            <div id="character-result" hidden>
+              <p class="eyebrow">MY FIRST LOOK</p>
+              <h3>내가 좋아하는 색으로 완성한 나의 캐릭터</h3>
+              <svg
+                viewBox="0 0 240 320"
+                role="img"
+                aria-label="선택한 색의 모자, 상의, 하의를 입은 캐릭터"
+              >
+                <g stroke="#3d3934" stroke-width="2.5" stroke-linejoin="round">
+                  <path
+                    id="hair"
+                    d="M93 54Q75 80 88 115L152 115Q167 66 144 53Z"
+                    fill="#403c37"
+                  />
+                  <path d="M109 106v22h24v-22" fill="#e3bca3" />
+                  <ellipse cx="121" cy="80" rx="28" ry="34" fill="#efd0b7" />
+                  <path
+                    id="hat"
+                    d="M89 64Q86 30 120 30Q151 30 153 65L169 70Q138 81 87 70Z"
+                  />
+                  <path
+                    id="top"
+                    d="M102 118L83 126L62 189L80 197L96 159L93 220H149L146 159L163 196L180 188L158 126L137 118Q121 138 102 118Z"
+                  />
+                  <path
+                    d="M62 189l-4 15q7 12 14 0l8-7M163 196l4 12q12 7 15-7l-2-13"
+                    fill="#efd0b7"
+                  />
+                  <path
+                    id="pants"
+                    d="M93 220H149L147 283H126L121 241L115 283H94Z"
+                  />
+                  <path
+                    d="M94 283H115L116 297H83Q82 288 94 283ZM126 283H147L159 295Q153 300 125 297Z"
+                    fill="#f1eee5"
+                  />
+                  <path
+                    d="M111 82h1m19 0h1M116 96q6 5 12-1M99 216h44"
+                    fill="none"
+                    stroke-linecap="round"
+                  />
+                </g>
+              </svg>
+              <p class="muted">
+                수업 마지막에 오늘 발견한 색과 다시 비교해봐요.
+              </p>
+            </div>
+          </div>
+          <div id="tab-style" class="tab">
+            <p class="eyebrow">MY STYLE DIRECTION</p>
+            <h2>색으로 표현하고 싶은<br />나의 모습은?</h2>
+            <p class="muted">
+              원하는 단어를 골라보세요. 여러 개 골라도 좋아요.
+            </p>
+            <div id="image-words" class="choice-row"></div>
+            <div class="image-scale">
+              <span class="axis-top">부드러운</span
+              ><span class="axis-bottom">또렷한</span
+              ><span class="axis-left">따뜻한</span
+              ><span class="axis-right">차가운</span>
+              <div>
+                <i style="--c: #ebc28f"></i><i style="--c: #b8afd1"></i
+                ><i style="--c: #a5533e"></i><i style="--c: #3555a1"></i>
+              </div>
+            </div>
+            <p class="muted">
+              색의 인상을 이야기하기 위한 예시예요. 계절 진단표가 아니에요.
+            </p>
+            <label class="field-label" for="image-note"
+              >원하는 이미지와 오늘 관찰한 색을 어떻게 연결하고 싶나요?</label
+            ><textarea
+              id="image-note"
+              rows="3"
+              placeholder="예: 차분한 느낌을 좋아해서, 오늘 자연스러웠던 블루를 상의에 써보고 싶어요."
+            ></textarea>
+            <div id="style-board"></div>
+          </div>
+          <div id="tab-summary" class="tab">
+            <p class="eyebrow">MY COLOR NOTES</p>
+            <h2>오늘 발견한 나의 색</h2>
+            <p class="muted">
+              정해진 유형 대신, 직접 남긴 관찰을 모았어요.<br />의견이 다르거나
+              판단하기 어려웠던 부분도 함께 살펴봐요.
+            </p>
+            <div id="summary-content"></div>
+            <button class="primary wide" id="download-notes">
+              관찰과 받은 피드백 저장 ↓</button
+            ><button class="outline-button wide" id="print-notes">
+              결과지 인쇄 · PDF 저장
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div class="preview-note">
+      색의 발견 <span>화면은 개념 학습용 · 실물 비교를 기준으로</span>
+    </div>
+    <script src="content.js"></script>
+    <script src="qr.js"></script>
+    <script src="studio.js"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "color-discovery-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Three-hour instructor-led personal color workshop and participant workbook",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test server.test.cjs",
+    "test:browser": "node --test browser.test.cjs"
+  }
+}

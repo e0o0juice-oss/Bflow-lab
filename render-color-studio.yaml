@@ -1,0 +1,22 @@
+# Personal-color classroom only. Existing render.yaml is the legacy BFLOW app.
+# In Render: New Blueprint -> this repository -> main -> Blueprint Path below.
+# Paid service and disk: review the current price in Render before creating.
+services:
+  - type: web
+    name: bflow-color-studio
+    runtime: node
+    plan: starter
+    numInstances: 1
+    autoDeploy: false
+    buildCommand: node --check color-studio/server.cjs && node --test color-studio/server.test.cjs
+    startCommand: node color-studio/server.cjs
+    healthCheckPath: /color-studio/api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: COLOR_DATA_DIR
+        value: /var/data/color-studio
+    disk:
+      name: color-studio-data
+      mountPath: /var/data/color-studio
+      sizeGB: 1
