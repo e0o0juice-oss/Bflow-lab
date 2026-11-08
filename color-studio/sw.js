@@ -1,11 +1,12 @@
 "use strict";
-const CACHE = "color-studio-shell-v1";
+const CACHE = "color-studio-shell-v2";
 const ASSETS = [
   "/color-studio/",
   "/color-studio/studio.css",
   "/color-studio/studio.js",
   "/color-studio/content.js",
   "/color-studio/qr.js",
+  "/color-studio/fonts/PretendardVariable.woff2",
 ];
 self.addEventListener("install", (event) => {
   event.waitUntil(

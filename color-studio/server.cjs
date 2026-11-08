@@ -790,6 +790,11 @@ function createApp({
         fail(404, "주소 또는 요청 방식을 확인해주세요.");
       }
       const assets = {
+        "/color-studio/fonts/PretendardVariable.woff2": [
+          "fonts/PretendardVariable.woff2",
+          "font/woff2",
+        ],
+        "/color-studio/fonts/OFL.txt": ["fonts/OFL.txt", "text/plain"],
         "/color-studio/": ["index.html", "text/html"],
         "/color-studio/index.html": ["index.html", "text/html"],
         "/color-studio/studio.css": ["studio.css", "text/css"],

@@ -9,15 +9,15 @@
   <body>
     <header class="header">
       <a class="brand" href="#home"
-        ><span class="brand-icon">◒</span> 색의 발견
-        <small>COLOR STUDIO</small></a
+        ><span class="brand-icon" aria-hidden="true"></span> 색의 발견
+        <small>Color Studio</small></a
       >
       <nav aria-label="화면 선택">
         <button data-view="home" class="active">스튜디오</button
         ><button data-view="lesson">강의 화면</button
         ><button data-view="workbook">나의 워크북</button>
       </nav>
-      <span class="draft" id="session-label">COLOR STUDIO · WORKSHOP</span>
+      <span class="draft" id="session-label">퍼스널컬러 워크숍</span>
     </header>
     <div id="connection-bar" class="connection-bar" role="status" hidden></div>
     <div id="notice" role="status" hidden></div>
@@ -25,17 +25,20 @@
       <section id="home" class="view active">
         <div class="hero">
           <div class="hero-copy">
-            <p class="eyebrow">PERSONAL COLOR · HANDS-ON WORKSHOP</p>
-            <h1>나에게 어울리는 색을<br />발견하는 시간<span>.</span></h1>
+            <p class="eyebrow">Color Studio</p>
+            <h1>
+              <span class="hero-first-line">나에게 어울리는 색을</span
+              ><br />발견하는 시간.
+            </h1>
             <p class="lead">
-              좋아하는 색에서 시작해, 나를 편안하게 만드는 색까지.<br />직접
-              대어 보고, 함께 관찰하며 나만의 컬러 노트를 완성해요.
+              좋아하는 색에서, 나를 닮은 색으로.<br />직접 비교하고 발견하는
+              나만의 컬러.
             </p>
             <div class="actions">
               <button class="primary" data-view="workbook">
-                나의 워크북 시작하기 <span>↗</span></button
+                워크북 시작하기 <span>↗</span></button
               ><button class="text-button" data-view="lesson">
-                강의 화면 살펴보기 →
+                강의 살펴보기 <span aria-hidden="true">›</span>
               </button>
             </div>
             <div class="hero-meta">
@@ -46,24 +49,64 @@
           <div
             class="fabric-art"
             role="img"
-            aria-label="코랄, 옐로, 라벤더, 블루, 올리브, 테라코타, 버건디 천이 펼쳐진 컬러 스튜디오 이미지"
+            aria-label="코랄, 옐로, 라벤더, 블루, 올리브, 테라코타, 버건디 색이 부채처럼 펼쳐진 컬러 팔레트"
           >
-            <div class="fabric coral"></div>
-            <div class="fabric yellow"></div>
-            <div class="fabric lavender"></div>
-            <div class="fabric blue"></div>
-            <div class="fabric olive"></div>
-            <div class="fabric terra"></div>
-            <div class="fabric wine"></div>
-            <span class="art-label"
-              >A LITTLE COLOR,<br />A NEW PERSPECTIVE.</span
-            ><span class="art-number">01 — 04 / THE SEASONS</span>
+            <div class="color-fan">
+              <i style="--c: #f4a18b; --r: -42deg; --n: 0"></i
+              ><i style="--c: #f1d381; --r: -28deg; --n: 1"></i
+              ><i style="--c: #c6b4dc; --r: -14deg; --n: 2"></i
+              ><i style="--c: #94bbd4; --r: 0deg; --n: 3"></i
+              ><i style="--c: #929b73; --r: 14deg; --n: 4"></i
+              ><i style="--c: #bd775a; --r: 28deg; --n: 5"></i
+              ><i style="--c: #883f56; --r: 42deg; --n: 6"></i>
+            </div>
+            <span class="art-caption">당신의 색은, 생각보다 다채로우니까.</span>
           </div>
+        </div>
+        <div class="intro-strip">
+          <span class="eyebrow">나의 색을 만나는 방법.</span>
+          <p>색을 이해하고.<br /><span>나를 발견하고.</span></p>
+          <span>총 180분 · 휴식 포함</span>
+        </div>
+        <div class="journey">
+          <article>
+            <span>취향에서 시작</span>
+            <h2>좋아하는 색에서<br />출발해요.</h2>
+            <p>
+              세 가지 색으로 표현한 나의 첫 코디.<br />색의 성질을 배우며 새로운
+              눈으로 바라봐요.
+            </p>
+            <div class="palette">
+              <i style="--c: #e98c7b"></i><i style="--c: #e9d780"></i
+              ><i style="--c: #a8a0c4"></i><i style="--c: #7695b3"></i>
+            </div>
+          </article>
+          <article>
+            <span>함께 관찰하기</span>
+            <h2>거울 앞에서,<br />함께 발견해요.</h2>
+            <p>
+              실물 색을 번갈아 대보고 얼굴의 변화를 관찰해요.<br />나와 조원의
+              생각이 달라도 괜찮아요.
+            </p>
+            <div class="sample-lines"><i></i><i></i><i></i></div>
+          </article>
+          <article>
+            <span>일상으로 연결</span>
+            <h2>나의 일상에<br />색을 더해요.</h2>
+            <p>
+              입고 싶은 옷부터 작은 액세서리까지.<br />원하는 이미지와 오늘의
+              발견을 연결해요.
+            </p>
+            <div class="palette">
+              <i style="--c: #a85339"></i><i style="--c: #7d8050"></i
+              ><i style="--c: #284fb9"></i><i style="--c: #773744"></i>
+            </div>
+          </article>
         </div>
         <section class="entry-panel" id="entry-panel">
           <div>
-            <p class="eyebrow">JOIN THE WORKSHOP</p>
-            <h2>함께 색을 발견해요.</h2>
+            <p class="eyebrow">함께 시작해요.</p>
+            <h2>당신만의 컬러 노트.<br /><span>지금 열어보세요.</span></h2>
             <p>강사가 알려준 6자리 코드로 수업에 참여하세요.</p>
           </div>
           <form id="join-form">
@@ -110,49 +153,9 @@
             <p class="muted">연습 기록은 이 기기에만 저장됩니다.</p>
           </div>
         </section>
-        <div class="intro-strip">
-          <span class="eyebrow">TODAY’S JOURNEY</span>
-          <p>색을 배우고. 나를 관찰하고. 일상에 연결하기.</p>
-          <span>총 180분 · 휴식 포함</span>
-        </div>
-        <div class="journey">
-          <article>
-            <span>01 / EXPLORE</span>
-            <h2>좋아하는 색에서<br />출발해요.</h2>
-            <p>
-              세 가지 색으로 표현한 나의 첫 코디.<br />색의 성질을 배우며 새로운
-              눈으로 바라봐요.
-            </p>
-            <div class="palette">
-              <i style="--c: #e98c7b"></i><i style="--c: #e9d780"></i
-              ><i style="--c: #a8a0c4"></i><i style="--c: #7695b3"></i>
-            </div>
-          </article>
-          <article>
-            <span>02 / OBSERVE</span>
-            <h2>거울 앞에서,<br />함께 발견해요.</h2>
-            <p>
-              실물 색을 번갈아 대보고 얼굴의 변화를 관찰해요.<br />나와 조원의
-              생각이 달라도 괜찮아요.
-            </p>
-            <div class="sample-lines"><i></i><i></i><i></i></div>
-          </article>
-          <article>
-            <span>03 / CONNECT</span>
-            <h2>나의 일상에<br />색을 더해요.</h2>
-            <p>
-              입고 싶은 옷부터 작은 액세서리까지.<br />원하는 이미지와 오늘의
-              발견을 연결해요.
-            </p>
-            <div class="palette">
-              <i style="--c: #a85339"></i><i style="--c: #7d8050"></i
-              ><i style="--c: #284fb9"></i><i style="--c: #773744"></i>
-            </div>
-          </article>
-        </div>
         <section class="schedule">
           <div>
-            <p class="eyebrow">THE WORKSHOP PLAN</p>
+            <p class="eyebrow">오늘의 여정</p>
             <h2>오늘의 3시간</h2>
             <p>강의와 실습이 자연스럽게 이어지는 아홉 단계.</p>
           </div>
@@ -228,7 +231,7 @@
       </section>
       <section id="workbook" class="view">
         <aside class="workbook-aside">
-          <p class="eyebrow">MY COLOR WORKBOOK</p>
+          <p class="eyebrow">나의 워크북</p>
           <h1>나를 발견하는<br />컬러 노트<span>.</span></h1>
           <p>
             관찰하고, 기록하고, 다시 살펴봐요.<br />서로 다른 의견도 소중한
@@ -275,7 +278,7 @@
           <div id="tab-roles" class="tab"></div>
           <div id="tab-break" class="tab"></div>
           <div id="tab-observe" class="tab active">
-            <p class="eyebrow">OBSERVE TOGETHER</p>
+            <p class="eyebrow">실물 색 비교</p>
             <h2>어떤 색에서<br />얼굴이 자연스러웠나요?</h2>
             <p class="muted">
               거울로 먼저 보고, 조원의 이야기도 들어보세요.<br />한 색상 비교를
@@ -329,7 +332,7 @@
             </p>
           </div>
           <div id="tab-favorite" class="tab">
-            <p class="eyebrow">MY FAVORITE COLORS</p>
+            <p class="eyebrow">나의 첫 번째 팔레트</p>
             <h2>내가 좋아하는 색<br />3가지를 골라주세요.</h2>
             <p class="muted">
               고른 순서대로 모자, 상의, 하의가 돼요.<br />완료를 누르면 나의
@@ -393,7 +396,7 @@
             </div>
           </div>
           <div id="tab-style" class="tab">
-            <p class="eyebrow">MY STYLE DIRECTION</p>
+            <p class="eyebrow">색과 나의 이미지</p>
             <h2>색으로 표현하고 싶은<br />나의 모습은?</h2>
             <p class="muted">
               원하는 단어를 골라보세요. 여러 개 골라도 좋아요.
@@ -422,7 +425,7 @@
             <div id="style-board"></div>
           </div>
           <div id="tab-summary" class="tab">
-            <p class="eyebrow">MY COLOR NOTES</p>
+            <p class="eyebrow">오늘의 발견</p>
             <h2>오늘 발견한 나의 색</h2>
             <p class="muted">
               정해진 유형 대신, 직접 남긴 관찰을 모았어요.<br />의견이 다르거나
@@ -439,7 +442,8 @@
       </section>
     </main>
     <div class="preview-note">
-      색의 발견 <span>화면은 개념 학습용 · 실물 비교를 기준으로</span>
+      Color Studio
+      <span>화면의 색은 참고용입니다. 실물 색을 기준으로 관찰해주세요.</span>
     </div>
     <script src="content.js"></script>
     <script src="qr.js"></script>
