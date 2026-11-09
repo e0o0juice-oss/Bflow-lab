@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "color-studio-shell-v5";
+const CACHE = "color-studio-shell-v6";
 const ASSETS = [
   "/color-studio/",
   "/color-studio/studio.css",

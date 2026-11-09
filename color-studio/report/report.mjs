@@ -461,10 +461,26 @@ export async function createReport(raw, assets) {
     }
   }
   paragraph("내가 생각한 이유와 실물에서 찾은 예", model.concepts.reason);
+  const feltLabels = {
+    feltA: "A · 색",
+    feltB: "B · 색",
+    feltDifference: "두 색의 차이",
+    feltSelf: "내가 본 얼굴의 변화",
+    feltPeer: "조원이 본 변화와 다른 의견",
+    feltNext: "다음에 색을 고를 때 확인할 점",
+  };
+  if (Object.keys(feltLabels).some((id) => model.concepts[id])) {
+    paragraph(
+      "두 펠트지 비교 · 발견한 차이",
+      "색의 차이를 설명하고 실제 얼굴 아래에서 관찰한 기록이에요.",
+    );
+    for (const [id, label] of Object.entries(feltLabels))
+      paragraph(label, model.concepts[id]);
+  }
   for (const [id, value] of Object.entries(model.concepts)) {
     if (
       !Object.hasOwn(conceptNames, id) &&
-      !["reason", "imageCombination"].includes(id)
+      !["reason", "imageCombination", ...Object.keys(feltLabels)].includes(id)
     )
       paragraph(
         "추가 학습 기록 · " + id,

@@ -888,7 +888,155 @@ function renderConcepts() {
       "privacy-note",
     ),
   );
+  renderFeltComparison(box);
   renderConceptAnswers();
+}
+
+function renderFeltComparison(box) {
+  const section = el("section", undefined, "concept-section");
+  section.id = "felt-comparison";
+  section.append(
+    el("p", "실물 탐구 · 약 15분", "eyebrow"),
+    el("h3", "비슷한 두 색, 얼굴에서는 어떻게 다를까요?"),
+    el(
+      "p",
+      "헷갈리는 펠트지 두 장을 골라 A·B라고 불러요. 색의 차이를 설명하는 연습을 하고, 얼굴 가까이에 두었을 때의 변화까지 확인해요.",
+    ),
+  );
+  const steps = el("ol", undefined, "observation-list");
+  [
+    "3분 · 비슷해 보이는 두 장을 골라 나란히 놓아요. 색상·밝기·선명함 중 어떤 차이가 있나요?",
+    "4분 · 같은 자리와 조명에서 얼굴 아래에 A와 B를 번갈아 대봐요. 거울로 먼저 관찰하고 조원의 의견을 들어요.",
+    "5분 · 두 펠트지만 나란히 크게 촬영하고, 아래에 차이와 관찰을 기록해요. 얼굴 사진은 필요 없어요.",
+    "3분 · 조원과 발견을 나눠요. 다음에 옷이나 화장품을 고를 때 무엇을 비교해보고 싶나요?",
+  ].forEach((text) => steps.append(el("li", text)));
+  section.append(steps);
+  const fields = [
+    [
+      "feltA",
+      "A · 내가 알아볼 수 있는 색 이름",
+      "예: 노란 기가 있는 연한 분홍",
+    ],
+    [
+      "feltB",
+      "B · 내가 알아볼 수 있는 색 이름",
+      "예: 푸른 기가 있는 연한 분홍",
+    ],
+    [
+      "feltDifference",
+      "두 색은 어떻게 달랐나요?",
+      "A가 더 밝다 / B가 더 선명하다 / 비슷하다 / 잘 모르겠다와 그 이유",
+    ],
+    [
+      "feltSelf",
+      "내가 본 얼굴의 변화",
+      "피부의 균일함, 눈 밑·입가 그림자 등을 적어요. 차이가 없거나 모르겠어도 괜찮아요.",
+    ],
+    [
+      "feltPeer",
+      "조원이 본 변화 · 다른 의견도 함께",
+      "예: 나는 비슷했지만 조원은 B에서 입가 그림자가 덜 보인다고 했어요.",
+    ],
+    [
+      "feltNext",
+      "다음에 색을 고를 때 확인할 점",
+      "예: 비슷한 분홍 립도 밝기뿐 아니라 노란 기와 푸른 기를 비교해보기",
+    ],
+  ];
+  for (const [id, title, hint] of fields) {
+    const label = el("label", title, "field-label");
+    label.htmlFor = id;
+    const input = el("textarea");
+    input.id = id;
+    input.rows = 2;
+    input.maxLength = 2000;
+    input.placeholder = hint;
+    input.value = book.concepts[id] || "";
+    input.oninput = () => {
+      book.concepts[id] = input.value;
+      saveBook();
+    };
+    section.append(label, input);
+  }
+  section.append(
+    el(
+      "p",
+      "기록은 내 워크북에 자동 저장되고 PDF에도 남아요. 사진은 아래 공유 버튼을 눌렀을 때만 같은 조와 강사에게 공개됩니다. 촬영 색으로 정확한 색이나 계절을 판정하지 않아요.",
+      "privacy-note",
+    ),
+  );
+  const file = el("input");
+  file.type = "file";
+  file.accept = "image/jpeg,image/png,image/webp";
+  file.id = "felt-photo";
+  file.setAttribute("aria-label", "A·B 펠트지 비교 사진");
+  const preview = el("img");
+  preview.hidden = true;
+  preview.alt = "두 펠트지 비교 사진 미리보기";
+  preview.style.maxWidth = "100%";
+  let photo = null,
+    request = null;
+  file.onchange = async () => {
+    request = null;
+    try {
+      photo = await prepareImage(file.files[0]);
+      preview.src = photo || "";
+      preview.hidden = !photo;
+    } catch (e) {
+      photo = null;
+      report(e);
+    }
+  };
+  const share = button("사진과 비교 기록을 우리 조에 공유", async () => {
+    if (!photo) return notify("먼저 펠트지 두 장을 찍은 사진을 선택해주세요.");
+    if (!session?.member || !room?.boardOpen || room.ended)
+      return notify(
+        "수업에 참여하고 강사가 공유 활동을 열면 올릴 수 있어요. 글 기록은 자동 저장돼요.",
+      );
+    share.disabled = true;
+    try {
+      const reason =
+        "[두 펠트지 비교]\n" +
+        fields
+          .map(
+            ([id, title]) => title + ": " + (book.concepts[id] || "기록 없음"),
+          )
+          .join("\n");
+      if (reason.length > 1500)
+        throw new Error(
+          "사진에 함께 올릴 기록은 총 1,500자 이내로 줄여주세요. 원래 기록은 워크북에 보관됩니다.",
+        );
+      request ||= {
+        reason,
+        image: photo,
+        words: [],
+        consent: false,
+        writeId: crypto.randomUUID(),
+      };
+      await api("board", "POST", request);
+      request = null;
+      photo = null;
+      file.value = "";
+      preview.hidden = true;
+      notify("같은 조에 공유했어요. 사진과 기록은 마지막 PDF에도 포함돼요.");
+      await loadBoard();
+    } catch (e) {
+      report(e);
+    } finally {
+      share.disabled = false;
+    }
+  });
+  section.append(
+    file,
+    preview,
+    share,
+    el(
+      "p",
+      "발표 공개는 기본으로 꺼져 있어요. 공유 화면에서 본인이 동의할 수 있어요. 업로드 전 새로고침하면 사진을 다시 선택해주세요.",
+      "privacy-note",
+    ),
+  );
+  box.append(section);
 }
 
 function renderConceptAnswers() {
@@ -1126,6 +1274,13 @@ function summaryText() {
     "비교 조건: " + book.conditions,
     "",
   ];
+  lines.push(
+    "[두 펠트지 비교]",
+    ...Object.entries(book.concepts)
+      .filter(([id]) => id.startsWith("felt"))
+      .map(([id, value]) => id + ": " + value),
+    "",
+  );
   const counts = new Map(),
     disagree = [],
     revisit = [];

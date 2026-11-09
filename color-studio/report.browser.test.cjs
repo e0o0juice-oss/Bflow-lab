@@ -61,6 +61,12 @@ test(
         "#concept-reason",
         "밝은 색과 선명한 색이 다르다는 것을 알았어요.",
       );
+      await student.fill("#feltA", "연한 코랄 펠트");
+      await student.fill("#feltB", "연한 로즈 펠트");
+      await student.fill("#feltDifference", "A는 노란 기가 더 보였어요.");
+      await student.fill("#feltSelf", "B에서 눈 밑 그림자가 덜 보였어요.");
+      await student.fill("#feltPeer", "조원은 두 색이 비슷하다고 했어요.");
+      await student.fill("#feltNext", "립을 고를 때 노란 기를 비교해보기");
       await host.locator('[data-answer-question="chroma"]').click();
       await student.click('[data-tab="demo"]');
       await student.fill(
@@ -235,6 +241,9 @@ test(
       }).replace(/\s/g, "");
       for (const word of [
         "입가그림자가덜보이고",
+        "A는노란기가더보였어요.",
+        "조원은두색이비슷하다고했어요.",
+        "립을고를때노란기를비교해보기",
         "블루와아이보리의부드러운대비",
         "코랄가방을더해보면어떨까요?",
         "다음에는블루셔츠와아이보리팬츠",
@@ -243,6 +252,29 @@ test(
       assert(!text.includes("다른학생게시물제외문구"));
       assert(!text.includes("피드백작성자이름비공개"));
       assert.equal(fs.readFileSync(pdfFile).subarray(0, 4).toString(), "%PDF");
+      await student.click('[data-tab="concepts"]');
+      assert.equal(await student.inputValue("#feltA"), "연한 코랄 펠트");
+      await student.setInputFiles("#felt-photo", {
+        name: "felt-pair.png",
+        mimeType: "image/png",
+        buffer: png,
+      });
+      await student
+        .getByRole("button", {
+          name: "사진과 비교 기록을 우리 조에 공유",
+          exact: true,
+        })
+        .click();
+      await student.waitForFunction(() =>
+        document.body.textContent.includes("같은 조에 공유했어요. 사진과 기록"),
+      );
+      await student.click('[data-tab="style"]');
+      await student.waitForFunction(() =>
+        document
+          .querySelector("#post-list")
+          ?.textContent.includes("[두 펠트지 비교]"),
+      );
+      await student.click('[data-tab="summary"]');
       let extraDownloads = 0;
       student.on("download", () => extraDownloads++);
       await student.route("**/color-studio/api/r/*/board/*/image", (route) =>
