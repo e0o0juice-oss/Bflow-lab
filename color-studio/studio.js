@@ -602,21 +602,11 @@ function renderFavorites() {
     box.append(b);
   });
   $("#selected-colors").replaceChildren();
-  ["모자", "상의", "하의"].forEach((label, i) => {
-    const e = el("span"),
-      c = C.palette[book.favorites[i]];
-    if (c) {
-      const chip = el("i");
-      chip.style.setProperty("--c", c.hex);
-      e.append(chip);
-    }
-    e.append(document.createTextNode(label + (c ? "" : " —")));
-    $("#selected-colors").append(e);
-  });
+  $("#selected-colors").hidden = true;
   $("#finish-favorite").disabled = book.favorites.length !== 3;
   $("#finish-favorite").textContent =
     book.favorites.length === 3
-      ? "완료 · 나의 캐릭터 보기 →"
+      ? "완료"
       : `좋아하는 색 ${3 - book.favorites.length}개를 더 골라주세요`;
   $("#character-result").hidden = !book.completed;
   if (book.completed && book.favorites.length === 3) {

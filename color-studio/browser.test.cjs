@@ -69,8 +69,14 @@ test(
         await page.waitForSelector("#workbook.active");
       }
       await a.click('[data-tab="favorite"]');
-      for (let i = 0; i < 3; i++)
+      assert.equal(await a.locator("#favorite-colors button").count(), 50);
+      for (const i of [0, 18, 49])
         await a.locator("#favorite-colors button").nth(i).click();
+      assert.doesNotMatch(
+        await a.locator("#tab-favorite").innerText(),
+        /캐릭터|모자|상의|하의|코디/,
+      );
+      assert.equal(await a.locator("#finish-favorite").innerText(), "완료");
       assert.equal(await a.locator("#character-result").isVisible(), false);
       await a.click("#finish-favorite");
       await a.waitForSelector("#character-result:visible");

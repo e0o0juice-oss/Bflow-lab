@@ -2196,6 +2196,7 @@ input[type="file"] {
     font-size: 10px;
   }
   #favorite-colors {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 13px;
     margin: 25px 0;
   }
@@ -2508,5 +2509,11 @@ input[type="file"] {
   }
   .workbook-paper h2 {
     font-size: 25pt;
+  }
+}
+
+@media (max-width: 359px) {
+  #favorite-colors {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
