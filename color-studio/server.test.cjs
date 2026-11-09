@@ -555,3 +555,66 @@ test("concept answers are released one at a time by the instructor, persisted, a
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("final reflection is private, bounded and retained; PDF fonts negotiate Brotli", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "color-reflection-")),
+    s = await start(dir);
+  try {
+    const made = await s.req("rooms", { method: "POST", data: {} }),
+      p = "r/" + made.data.code,
+      joined = await s.req(p + "/join", {
+        method: "POST",
+        data: { name: "학생", group: 1 },
+      }),
+      cookie = joined.cookie;
+    const book = {
+      ...joined.data.book,
+      reflection: {
+        favoriteReason: "파랑이 좋아요.",
+        discovery: "입가 그림자를 관찰했어요.",
+        nextTry: "블루 셔츠를 입어볼래요.",
+      },
+    };
+    assert.equal(
+      (
+        await s.req(p + "/book", {
+          method: "PUT",
+          cookie,
+          data: { book, version: 0, writeId: "reflection" },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await s.req(p, { cookie })).data.book.reflection.nextTry,
+      "블루 셔츠를 입어볼래요.",
+    );
+    assert.equal(
+      (
+        await s.req(p + "/book", {
+          method: "PUT",
+          cookie,
+          data: {
+            book: { ...book, reflection: { nextTry: "가".repeat(2001) } },
+            version: 1,
+            writeId: "too-long",
+          },
+        })
+      ).status,
+      400,
+    );
+    const response = await fetch(
+      s.base + "/color-studio/fonts/ReportRegular.ttf",
+      { headers: { "Accept-Encoding": "br" } },
+    );
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Content-Encoding"), "br");
+    assert.equal(
+      (await response.arrayBuffer()).byteLength,
+      fs.statSync(path.join(__dirname, "fonts/ReportRegular.ttf")).size,
+    );
+  } finally {
+    await s.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

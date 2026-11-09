@@ -427,10 +427,23 @@
               정해진 유형 대신, 직접 남긴 관찰을 모았어요.<br />의견이 다르거나
               판단하기 어려웠던 부분도 함께 살펴봐요.
             </p>
+            <div id="final-reflection"></div>
             <div id="summary-content"></div>
-            <button class="primary wide" id="download-notes">
-              관찰과 받은 피드백 저장 ↓</button
-            ><button class="outline-button wide" id="print-notes">
+            <div class="pdf-export-panel">
+              <p class="eyebrow">MY COLOR WORKBOOK</p>
+              <h3>오늘의 발견을, 한 권으로.</h3>
+              <p>
+                내가 쓴 기록과 직접 공유한 이미지, 받은 피드백을 한 권의 PDF로
+                간직하세요.
+              </p>
+              <button class="primary wide" id="download-pdf">
+                나의 컬러 노트 PDF 저장 ↓
+              </button>
+              <p id="pdf-status" class="privacy-note" role="status"></p>
+            </div>
+            <button class="text-button wide" id="download-notes">
+              텍스트로도 백업하기 ↓</button
+            ><button class="outline-button wide" id="print-notes" hidden>
               결과지 인쇄 · PDF 저장
             </button>
           </div>

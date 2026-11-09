@@ -1,0 +1,2 @@
+# Generated bundle contains significant whitespace inside PDF/string literals.
+vendor/report.min.js -whitespace linguist-generated=true

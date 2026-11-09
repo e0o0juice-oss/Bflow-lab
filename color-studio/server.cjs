@@ -304,6 +304,11 @@ function createApp({
       imageNote: str(book.imageNote || "", 2000),
       role: str(book.role || "", 40),
       conditions: str(book.conditions || "", 2000),
+      reflection: {
+        favoriteReason: str(book.reflection?.favoriteReason || "", 2000),
+        discovery: str(book.reflection?.discovery || "", 2000),
+        nextTry: str(book.reflection?.nextTry || "", 2000),
+      },
     };
     if (
       !Array.isArray(book.favorites) ||
@@ -812,6 +817,15 @@ function createApp({
           "font/woff2",
         ],
         "/color-studio/fonts/OFL.txt": ["fonts/OFL.txt", "text/plain"],
+        "/color-studio/fonts/ReportRegular.ttf": [
+          "fonts/ReportRegular.ttf",
+          "font/ttf",
+        ],
+        "/color-studio/fonts/ReportSemibold.ttf": [
+          "fonts/ReportSemibold.ttf",
+          "font/ttf",
+        ],
+        "/color-studio/report.js": ["vendor/report.min.js", "text/javascript"],
         "/color-studio/": ["index.html", "text/html"],
         "/color-studio/index.html": ["index.html", "text/html"],
         "/color-studio/studio.css": ["studio.css", "text/css"],
@@ -826,9 +840,19 @@ function createApp({
         return res.end();
       }
       if (req.method === "GET" && assets[u.pathname]) {
-        const [f, type] = assets[u.pathname];
+        let [f, type] = assets[u.pathname];
+        const encoded =
+          type === "font/ttf" &&
+          /\bbr\b/.test(req.headers["accept-encoding"] || "") &&
+          fs.existsSync(path.join(__dirname, f + ".br"));
+        if (encoded) f += ".br";
         res.writeHead(200, {
-          "Content-Type": type + "; charset=utf-8",
+          ...(encoded
+            ? { "Content-Encoding": "br", Vary: "Accept-Encoding" }
+            : {}),
+          "Content-Type": type.startsWith("font/")
+            ? type
+            : type + "; charset=utf-8",
           ...headers,
           "Content-Security-Policy":
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",

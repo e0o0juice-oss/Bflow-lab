@@ -2567,3 +2567,56 @@ input[type="file"] {
   flex-shrink: 0;
   font-size: 12px;
 }
+#final-reflection {
+  padding: 24px;
+  background: #f5f5f7;
+  border-radius: 20px;
+  margin: 24px 0 32px;
+}
+#final-reflection h3 {
+  font-size: 23px;
+  margin-bottom: 20px;
+}
+#final-reflection textarea {
+  background: white;
+}
+.pdf-export-panel {
+  margin: 32px 0 12px;
+  padding: 28px 24px;
+  background: #f5f5f7;
+  border-radius: 22px;
+}
+.pdf-export-panel h3 {
+  font-size: 27px;
+  margin: 8px 0 13px;
+  letter-spacing: -0.04em;
+}
+.pdf-export-panel > p:not(.eyebrow) {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.pdf-export-panel .eyebrow {
+  font-size: 10px;
+}
+.pdf-export-panel .primary {
+  margin-top: 12px;
+}
+.pdf-export-panel #pdf-status {
+  font-size: 10px;
+  margin-bottom: 0;
+}
+.pdf-export-panel:has(#pdf-status:empty) #pdf-status {
+  display: none;
+}
+@media (max-width: 700px) {
+  #final-reflection {
+    padding: 20px;
+  }
+  .pdf-export-panel {
+    padding: 24px 20px;
+  }
+  .pdf-export-panel h3 {
+    font-size: 24px;
+  }
+}

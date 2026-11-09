@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "color-studio-shell-v4";
+const CACHE = "color-studio-shell-v5";
 const ASSETS = [
   "/color-studio/",
   "/color-studio/studio.css",
@@ -51,4 +51,27 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(url.pathname)),
     );
+});
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (
+    event.request.method !== "GET" ||
+    url.origin !== location.origin ||
+    ![
+      "/color-studio/report.js",
+      "/color-studio/fonts/ReportRegular.ttf",
+      "/color-studio/fonts/ReportSemibold.ttf",
+    ].includes(url.pathname)
+  )
+    return;
+  event.respondWith(
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(event.request);
+      if (cached) return cached;
+      const response = await fetch(event.request);
+      if (response.ok) await cache.put(event.request, response.clone());
+      return response;
+    }),
+  );
 });

@@ -12,6 +12,7 @@ const emptyBook = () => ({
   imageNote: "",
   role: "",
   conditions: "",
+  reflection: { favoriteReason: "", discovery: "", nextTry: "" },
 });
 const params = new URLSearchParams(location.search);
 let code = params.get("room") || "",
@@ -1193,11 +1194,59 @@ function summaryText() {
     );
   lines.push(
     "",
+    "좋아하는 색에 담긴 나의 이야기: " +
+      (book.reflection?.favoriteReason || "기록 없음"),
+    "오늘 새롭게 발견한 점: " + (book.reflection?.discovery || "기록 없음"),
+    "다음에 시도해보고 싶은 조합: " + (book.reflection?.nextTry || "기록 없음"),
     "이 기록은 실물 색 비교의 관찰 노트이며 전문 진단이나 계절 유형 확정 결과가 아닙니다. 조명과 주변 조건에 따라 달라질 수 있어요.",
   );
   return lines.join("\n");
 }
+function renderReflection() {
+  const box = $("#final-reflection");
+  if (!box) return;
+  if (!box.children.length) {
+    box.append(el("h3", "오늘의 발견을 남겨보세요."));
+    for (const [id, label, placeholder] of [
+      [
+        "favoriteReason",
+        "좋아하는 색에 담긴 나의 이야기",
+        "왜 이 색을 좋아하나요? 어떻게 사용하고 싶나요?",
+      ],
+      [
+        "discovery",
+        "오늘 새롭게 발견한 점",
+        "실물 비교에서 새롭게 알게 된 점을 남겨보세요.",
+      ],
+      [
+        "nextTry",
+        "다음에 시도해보고 싶은 색과 조합",
+        "다음에 입어보고 싶은 옷이나 시도할 조합을 적어보세요.",
+      ],
+    ]) {
+      const caption = el("label", label, "field-label");
+      caption.htmlFor = "reflection-" + id;
+      const input = el("textarea");
+      input.id = "reflection-" + id;
+      input.rows = 3;
+      input.maxLength = 2000;
+      input.placeholder = placeholder;
+      input.oninput = () => {
+        book.reflection ||= {};
+        book.reflection[id] = input.value;
+        saveBook();
+      };
+      box.append(caption, input);
+    }
+  }
+  for (const id of ["favoriteReason", "discovery", "nextTry"]) {
+    const input = $("#reflection-" + id);
+    if (input !== document.activeElement)
+      input.value = book.reflection?.[id] || "";
+  }
+}
 function renderSummary() {
+  renderReflection();
   const box = $("#summary-content");
   box.replaceChildren();
   const pre = el("div", summaryText(), "summary-text");
@@ -1221,6 +1270,188 @@ async function downloadNotes() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+let reportLibraryPromise = null,
+  reportFontsPromise = null;
+function reportLibrary() {
+  if (window.ColorReport) return Promise.resolve(window.ColorReport);
+  if (!reportLibraryPromise)
+    reportLibraryPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "/color-studio/report.js";
+      script.onload = () => resolve(window.ColorReport);
+      script.onerror = () => {
+        reportLibraryPromise = null;
+        reject(
+          Error(
+            "PDF 도구를 불러오지 못했어요. 연결을 확인하고 다시 눌러주세요.",
+          ),
+        );
+      };
+      document.head.append(script);
+    });
+  return reportLibraryPromise;
+}
+async function reportFonts() {
+  if (!reportFontsPromise)
+    reportFontsPromise = Promise.all(
+      ["Regular", "Semibold"].map(async (weight) => {
+        const response = await fetch(
+          "/color-studio/fonts/Report" + weight + ".ttf",
+        );
+        if (!response.ok)
+          throw Error(
+            "PDF 글꼴을 불러오지 못했어요. 연결을 확인하고 다시 눌러주세요.",
+          );
+        return new Uint8Array(await response.arrayBuffer());
+      }),
+    ).catch((error) => {
+      reportFontsPromise = null;
+      throw error;
+    });
+  const [regular, semibold] = await reportFontsPromise;
+  return { regular, semibold };
+}
+async function imageBytes(source, type = "image/jpeg", max = 1200) {
+  let url = source,
+    owned = false;
+  if (!source.startsWith("blob:") && !source.startsWith("data:")) {
+    const response = await fetch(source, { credentials: "same-origin" });
+    if (!response.ok)
+      throw Error(
+        "공유 이미지를 불러오지 못했어요. 연결을 확인하고 PDF 저장을 다시 눌러주세요.",
+      );
+    url = URL.createObjectURL(await response.blob());
+    owned = true;
+  }
+  try {
+    const image = new Image();
+    image.src = url;
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () =>
+        reject(Error("이미지 형식을 확인할 수 없어 PDF 저장을 중단했어요."));
+    });
+    const scale = Math.min(
+      1,
+      max / Math.max(image.naturalWidth, image.naturalHeight),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext("2d");
+    if (type === "image/jpeg") {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, type, 0.9),
+    );
+    if (!blob) throw Error("PDF에 넣을 이미지를 준비하지 못했어요.");
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    if (owned) URL.revokeObjectURL(url);
+  }
+}
+async function reportAvatar(snapshot) {
+  if (!snapshot.completed || snapshot.favorites.length !== 3) return null;
+  const svg = $("#character-result svg").cloneNode(true);
+  svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  svg.setAttribute("width", "480");
+  svg.setAttribute("height", "640");
+  ["hat", "top", "pants"].forEach((id, i) =>
+    svg
+      .querySelector("#" + id)
+      .setAttribute("fill", C.palette[snapshot.favorites[i]].hex),
+  );
+  const url = URL.createObjectURL(
+    new Blob([new XMLSerializer().serializeToString(svg)], {
+      type: "image/svg+xml",
+    }),
+  );
+  try {
+    return await imageBytes(url, "image/png", 640);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+async function downloadPdf() {
+  const button = $("#download-pdf"),
+    status = $("#pdf-status"),
+    snapshot = structuredClone(book);
+  button.disabled = true;
+  button.textContent = "PDF 만드는 중…";
+  status.textContent = "기록과 이미지를 모으고 있어요. 잠시만 기다려주세요.";
+  try {
+    let posts = [];
+    if (session?.role === "member") {
+      try {
+        boardPosts = (await api("board")).posts;
+        posts = boardPosts.filter((p) => p.owner === true);
+      } catch {
+        throw Error(
+          "공유 기록과 받은 피드백을 확인할 수 없어 PDF 저장을 중단했어요. 연결 후 다시 눌러주세요. 기기 기록은 아래 텍스트 백업으로 보관할 수 있어요.",
+        );
+      }
+    }
+    const images = [];
+    for (const post of posts) {
+      if (!post.image) continue;
+      status.textContent = "공유 이미지를 PDF에 담고 있어요.";
+      const source = window.StudioTransport
+        ? await window.StudioTransport.imageUrl(code, post.id)
+        : apiBase() + "/board/" + post.id + "/image";
+      images.push({ id: post.id, bytes: await imageBytes(source) });
+    }
+    const [module, fonts, avatar] = await Promise.all([
+      reportLibrary(),
+      reportFonts(),
+      reportAvatar(snapshot),
+    ]);
+    status.textContent = "나만의 컬러 노트를 완성하고 있어요.";
+    const result = await module.createReport(
+      {
+        book: snapshot,
+        palette: C.palette,
+        config: structuredClone(config()),
+        member: session?.member
+          ? { name: session.member.name, group: session.member.group }
+          : null,
+        posts,
+        revealed: room?.conceptAnswers || {},
+        generatedAt: new Date().toISOString(),
+      },
+      { ...fonts, images, avatar },
+    );
+    const url = URL.createObjectURL(
+        new Blob([result.bytes], { type: "application/pdf" }),
+      ),
+      link = el("a");
+    link.href = url;
+    link.download = "나의-컬러-노트.pdf";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    status.textContent =
+      result.pageCount +
+      "쪽 PDF를 만들었어요. 기기의 다운로드 또는 파일 앱에서 확인해주세요." +
+      (result.unsupportedCount
+        ? " 일부 기호는 □로 표시돼요. 텍스트 백업도 함께 보관해주세요."
+        : "");
+  } catch (error) {
+    const message =
+      error instanceof TypeError
+        ? "이미지나 글꼴을 불러오지 못해 PDF 저장을 중단했어요. 연결을 확인하고 다시 눌러주세요."
+        : error.message || "PDF를 저장하지 못했어요. 다시 시도해주세요.";
+    status.textContent = message;
+    report(Error(message));
+  } finally {
+    button.disabled = false;
+    button.textContent = "나의 컬러 노트 PDF 저장 ↓";
+  }
+}
+$("#download-pdf").onclick = downloadPdf;
 $("#download-notes").onclick = () => downloadNotes().catch(report);
 $("#print-notes").onclick = async () => {
   if (session?.role === "member")
