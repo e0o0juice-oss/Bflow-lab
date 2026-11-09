@@ -381,7 +381,8 @@ function connect() {
   );
   eventSource.addEventListener("state", (e) => {
     const fresh = JSON.parse(e.data),
-      oldStage = room?.stage;
+      oldStage = room?.stage,
+      oldAnswers = JSON.stringify(room?.conceptAnswers || {});
     room = fresh;
     connected = true;
     cacheMembership();
@@ -403,6 +404,8 @@ function connect() {
         }
       }
       renderStatus();
+      if (oldAnswers !== JSON.stringify(fresh.conceptAnswers || {}))
+        renderConceptAnswers();
       if (JSON.stringify(fresh.config) !== lastConfig) {
         lastConfig = JSON.stringify(fresh.config);
         schedule();
@@ -762,6 +765,7 @@ function heading(box, eyebrow, title, desc) {
 }
 function conceptPick(box, id, question, options) {
   const section = el("section", undefined, "concept-block");
+  section.dataset.concept = id;
   section.append(el("h3", question));
   const row = el("div", undefined, "choice-row");
   for (const [value, label, color] of options) {
@@ -792,7 +796,7 @@ function renderConcepts() {
     box,
     "COLOR LAB",
     "색을 나누어 살펴봐요.",
-    "색상 · 밝기 · 선명함을 따로 관찰해요. 정답보다 이유를 이야기하고, 실물에서 비슷한 예를 찾아보세요.",
+    "먼저 답을 고르고 이유를 이야기해보세요. 강사가 정답을 공개하면 답과 해설을 함께 확인할 수 있어요.",
   );
   conceptPick(box, "hue", "01 · 이 색은 어떤 계열인가요?", [
     ["red", "빨강 계열", "#c85353"],
@@ -805,6 +809,7 @@ function renderConcepts() {
   target.style.color = "#fff";
   box.querySelector(".concept-block").append(target);
   const section = el("section", undefined, "concept-block");
+  section.dataset.concept = "brightness";
   section.append(
     el("h3", "02 · 밝은 순서로 배열해보세요."),
     el("p", "위가 밝은 쪽, 아래가 어두운 쪽이에요.", "muted"),
@@ -842,23 +847,16 @@ function renderConcepts() {
     }
     section.append(row);
   });
-  section.append(
-    button("차이 살펴보기", () =>
-      notify(
-        "예시 배열: 가장 연한 블루 → 중간 밝은 블루 → 중간 어두운 블루 → 가장 짙은 네이비. 기기와 실물에서 차이를 다시 찾아보세요.",
-      ),
-    ),
-  );
   box.append(section);
   conceptPick(box, "chroma", "03 · 어느 쪽이 더 선명하게 느껴지나요?", [
-    ["vivid", "A · 선명한 쪽", "#b56979"],
-    ["muted", "B · 차분한 쪽", "#95777c"],
-    ["unsure", "잘 모르겠어요"],
+    ["vivid", "A", "#b56979"],
+    ["muted", "B", "#95777c"],
+    ["unsure", "잘 모르겠다"],
   ]);
   conceptPick(box, "tone", "04 · 밝고 부드러운 느낌과 가까운 색은?", [
-    ["soft", "연한 로즈", "#ecd1d7"],
-    ["deep", "깊고 차분한 로즈", "#725963"],
-    ["vivid", "선명한 로즈", "#bc3658"],
+    ["soft", "A", "#ecd1d7"],
+    ["deep", "B", "#725963"],
+    ["unsure", "잘 모르겠다"],
   ]);
   conceptPick(box, "temperature", "05 · 더 따뜻하게 느껴지는 쪽은?", [
     ["warm", "A", "#bf6955"],
@@ -889,7 +887,64 @@ function renderConcepts() {
       "privacy-note",
     ),
   );
+  renderConceptAnswers();
 }
+
+function renderConceptAnswers() {
+  $$("#tab-concepts [data-concept]").forEach((section) => {
+    let answerBox = section.querySelector(".concept-answer");
+    if (!answerBox) {
+      answerBox = el("div", undefined, "concept-answer");
+      answerBox.setAttribute("role", "status");
+      section.append(answerBox);
+    }
+    const answer = room?.conceptAnswers?.[section.dataset.concept];
+    answerBox.hidden = !answer;
+    answerBox.replaceChildren();
+    if (!answer) return;
+    answerBox.append(
+      el("b", "정답 · " + answer.label),
+      el("p", answer.explanation),
+    );
+    if (answer.swatches) {
+      const row = el("div", undefined, "answer-swatches");
+      answer.swatches.forEach((c) => {
+        const chip = el("span", c.name);
+        chip.style.background = c.hex;
+        chip.style.color = ink(c.hex);
+        row.append(chip);
+      });
+      answerBox.append(row);
+    }
+  });
+}
+function renderTeacherAnswers() {
+  if (!$("#concept-controls")) return;
+  const box = $("#concept-controls");
+  box.replaceChildren();
+  Object.entries(room.conceptAnswerKey || {}).forEach(([id, answer]) => {
+    const row = el("div", undefined, "answer-control");
+    const copy = el("div");
+    copy.append(
+      el("b", answer.number + "번 · " + answer.title),
+      el("p", "정답: " + answer.label),
+    );
+    const revealed = !!room.conceptAnswers?.[id];
+    const toggle = button(revealed ? "정답 숨기기" : "정답 공개", () =>
+      control("concept-answer", { question: id, value: !revealed }),
+    );
+    toggle.dataset.answerQuestion = id;
+    toggle.setAttribute(
+      "aria-label",
+      answer.number + "번 " + (revealed ? "정답 숨기기" : "정답 공개"),
+    );
+    toggle.setAttribute("aria-pressed", String(revealed));
+    toggle.disabled = room.ended;
+    row.append(copy, toggle);
+    box.append(row);
+  });
+}
+
 function renderSupporting() {
   heading(
     $("#tab-basics"),
@@ -1600,6 +1655,20 @@ function renderTeacher() {
       el("p", "", "instructor-run"),
     );
     right.append(memo);
+    const answers = el("section", undefined, "teacher-panel");
+    answers.append(
+      el("p", "COLOR LAB", "eyebrow"),
+      el("h2", "색 개념 문제 · 정답 공개"),
+      el(
+        "p",
+        "학생들이 선택한 뒤 문제별로 공개해주세요. 답과 해설은 참여자·발표 화면에 함께 나타납니다.",
+        "muted",
+      ),
+    );
+    const answerControls = el("div");
+    answerControls.id = "concept-controls";
+    answers.append(answerControls);
+    right.append(answers);
     const groups = el("section", undefined, "teacher-panel");
     groups.append(
       el("p", "GROUP PROGRESS", "eyebrow"),
@@ -1766,6 +1835,7 @@ function renderTeacherLive() {
       );
     box.append(e);
   }
+  renderTeacherAnswers();
   schedule();
   tick();
 }
@@ -1984,22 +2054,31 @@ function renderLesson() {
     : "색을 배우고 · 관찰하고 · 연결하기";
   $(".lesson-title h1").textContent = s.title;
   $(".lesson-title p:last-child").textContent = s.description;
+  const questionId =
+    stage === 2
+      ? ["hue", "brightness", "chroma", "tone", "temperature"][index]
+      : null;
+  const revealedAnswer = questionId && room?.conceptAnswers?.[questionId];
   const comp = $(".comparison");
   comp.replaceChildren();
-  s.colors.forEach((hex, i) => {
+  const colors = revealedAnswer?.swatches?.map((c) => c.hex) || s.colors;
+  const labels = revealedAnswer?.swatches?.map((c) => c.name) || s.labels;
+  colors.forEach((hex, i) => {
     const e = el("div");
     e.style.background = hex;
     e.style.color = ink(hex);
-    e.append(
-      el("span", String.fromCharCode(65 + i)),
-      el("strong", s.labels[i]),
-    );
+    e.append(el("span", String.fromCharCode(65 + i)), el("strong", labels[i]));
     comp.append(e);
   });
   $(".lesson-task p").replaceChildren(
-    el("b", "지금 함께 해볼 일"),
+    el(
+      "b",
+      revealedAnswer ? "정답 · " + revealedAnswer.label : "지금 함께 해볼 일",
+    ),
     el("br"),
-    document.createTextNode(s.task),
+    document.createTextNode(
+      revealedAnswer ? revealedAnswer.explanation : s.task,
+    ),
   );
   $("#slide-count").textContent =
     String(stage + 1).padStart(2, "0") +

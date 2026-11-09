@@ -477,3 +477,81 @@ test("Render external URL supplies HTTPS origin validation and Secure cookies", 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("concept answers are released one at a time by the instructor, persisted, and can be hidden again", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "color-answers-"));
+  let s = await start(dir);
+  try {
+    const created = await s.req("rooms", { method: "POST", data: {} }),
+      p = "r/" + created.data.code,
+      host = created.cookie;
+    const joined = await s.req(p + "/join", {
+        method: "POST",
+        data: { name: "학생", group: 1 },
+      }),
+      student = joined.cookie;
+    assert.deepEqual(joined.data.conceptAnswers, {});
+    assert.equal(Object.hasOwn(joined.data, "conceptAnswerKey"), false);
+    assert.equal(Object.keys(created.data.conceptAnswerKey).length, 5);
+    assert.equal(
+      (
+        await s.req(p + "/control", {
+          method: "POST",
+          cookie: student,
+          data: { action: "concept-answer", question: "chroma", value: true },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await s.req(p + "/control", {
+          method: "POST",
+          cookie: host,
+          data: { action: "concept-answer", question: "unknown", value: true },
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await s.req(p + "/control", {
+          method: "POST",
+          cookie: host,
+          data: { action: "concept-answer", question: "chroma", value: "true" },
+        })
+      ).status,
+      400,
+    );
+    await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: { action: "concept-answer", question: "chroma", value: true },
+    });
+    let state = (await s.req(p, { cookie: student })).data;
+    assert.deepEqual(Object.keys(state.conceptAnswers), ["chroma"]);
+    assert.equal(state.conceptAnswers.chroma.label, "A");
+    assert.equal(Object.hasOwn(state, "conceptAnswerKey"), false);
+    assert.equal(
+      (await s.req(p + "/presentation", { cookie: host })).data.conceptAnswers
+        .chroma.label,
+      "A",
+    );
+    await s.stop();
+    s = await start(dir);
+    assert.equal(
+      (await s.req(p, { cookie: student })).data.conceptAnswers.chroma.label,
+      "A",
+    );
+    await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: { action: "concept-answer", question: "chroma", value: false },
+    });
+    state = (await s.req(p, { cookie: student })).data;
+    assert.deepEqual(state.conceptAnswers, {});
+  } finally {
+    await s.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

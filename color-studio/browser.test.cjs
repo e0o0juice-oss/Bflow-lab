@@ -409,3 +409,161 @@ test(
     }
   },
 );
+
+test(
+  "instructor answer reveal reaches students and projection without disturbing written answers",
+  { timeout: 60000 },
+  async () => {
+    const dataDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "color-reveal-browser-"),
+      ),
+      app = createApp({ dataDir });
+    app.server.listen(0, "127.0.0.1");
+    await once(app.server, "listening");
+    let browser;
+    try {
+      browser = await chromium.launch({
+        executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
+        headless: true,
+        args: ["--no-sandbox"],
+      });
+      const hc = await browser.newContext(),
+        sc = await browser.newContext({
+          viewport: { width: 390, height: 844 },
+        }),
+        host = await hc.newPage(),
+        student = await sc.newPage(),
+        errors = [];
+      for (const p of [host, student])
+        p.on("pageerror", (e) => errors.push(e.message));
+      const base =
+        "http://127.0.0.1:" + app.server.address().port + "/color-studio/";
+      await host.goto(base);
+      await host.click("#create-room");
+      await host.waitForSelector("#teacher-main");
+      const code = await host.locator(".room-code").innerText();
+      await host.locator("#teacher-stage-list button").nth(2).click();
+      await student.goto(base + "?room=" + code);
+      await student.fill("#join-name", "학생");
+      await student.click("#join-form button");
+      await student.waitForSelector("#tab-concepts.active");
+      assert.deepEqual(
+        await student
+          .locator('[data-concept="chroma"] .choice-row button')
+          .allTextContents(),
+        ["A", "B", "잘 모르겠다"],
+      );
+      assert.deepEqual(
+        await student
+          .locator('[data-concept="tone"] .choice-row button')
+          .allTextContents(),
+        ["A", "B", "잘 모르겠다"],
+      );
+      assert.equal(
+        await student.locator('button:text-is("차이 살펴보기")').count(),
+        0,
+      );
+      assert.equal(await student.locator(".concept-answer:visible").count(), 0);
+      assert.equal(await student.locator("[data-answer-question]").count(), 0);
+      await student
+        .locator('[data-concept="chroma"] .choice-row button')
+        .nth(1)
+        .click();
+      await student.fill("#concept-reason", "B가 차분하게 느껴져요.");
+      await host.locator('[data-answer-question="chroma"]').click();
+      await student.waitForSelector(
+        '[data-concept="chroma"] .concept-answer:visible',
+      );
+      assert.match(
+        await student
+          .locator('[data-concept="chroma"] .concept-answer')
+          .innerText(),
+        /정답 · A/,
+      );
+      assert.equal(await student.locator(".concept-answer:visible").count(), 1);
+      assert.equal(
+        await student.inputValue("#concept-reason"),
+        "B가 차분하게 느껴져요.",
+      );
+      assert.equal(
+        await student
+          .locator("#concept-reason")
+          .evaluate((e) => e === document.activeElement),
+        true,
+      );
+      assert.equal(
+        await student
+          .locator('[data-concept="chroma"] .choice-row button')
+          .nth(1)
+          .getAttribute("aria-pressed"),
+        "true",
+      );
+      await host.evaluate(() => control("slide", { slide: 2 }));
+      const proj = await hc.newPage();
+      await proj.setViewportSize({ width: 1280, height: 720 });
+      await proj.goto(base + "?room=" + code + "&view=presentation");
+      await proj.waitForSelector(".presentation-mode");
+      assert.match(await proj.locator(".lesson-task").innerText(), /정답 · A/);
+      assert(
+        await proj.evaluate(
+          () => document.documentElement.scrollHeight <= innerHeight + 1,
+        ),
+      );
+      await student.reload();
+      await student.waitForSelector("#tab-concepts.active");
+      assert.equal(
+        await student
+          .locator('[data-concept="chroma"] .concept-answer')
+          .isVisible(),
+        true,
+      );
+      assert.equal(
+        await student.inputValue("#concept-reason"),
+        "B가 차분하게 느껴져요.",
+      );
+      await host.locator('[data-answer-question="chroma"]').click();
+      await student.waitForSelector('[data-concept="chroma"] .concept-answer', {
+        state: "hidden",
+      });
+      await proj.waitForFunction(
+        () =>
+          !document
+            .querySelector(".lesson-task")
+            .textContent.includes("정답 ·"),
+      );
+      await host.locator('[data-answer-question="brightness"]').click();
+      await student.waitForSelector(
+        '[data-concept="brightness"] .answer-swatches',
+      );
+      assert.equal(
+        await student
+          .locator('[data-concept="brightness"] .answer-swatches span')
+          .count(),
+        4,
+      );
+      await host.evaluate(() => control("slide", { slide: 1 }));
+      await proj.waitForFunction(() =>
+        document
+          .querySelector(".lesson-task")
+          .textContent.includes("정답 · 밝은 색"),
+      );
+      assert(
+        await proj.evaluate(
+          () => document.documentElement.scrollHeight <= innerHeight + 1,
+        ),
+      );
+      assert(
+        await student.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      );
+      assert.deepEqual(errors, []);
+    } finally {
+      await browser?.close();
+      app.closeStreams();
+      app.server.closeAllConnections();
+      await new Promise((r) => app.server.close(r));
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  },
+);

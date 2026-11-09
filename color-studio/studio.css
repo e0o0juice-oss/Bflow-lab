@@ -2517,3 +2517,53 @@ input[type="file"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+.concept-answer {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: #edf5ff;
+  color: #174a7b;
+}
+.concept-answer > b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.concept-answer p {
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 9px 0 0;
+}
+.answer-swatches {
+  display: flex;
+  gap: 6px;
+  margin-top: 16px;
+}
+.answer-swatches span {
+  flex: 1;
+  min-width: 0;
+  padding: 22px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  text-align: center;
+}
+.answer-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e8e8ed;
+}
+.answer-control b {
+  font-size: 14px;
+  font-weight: 550;
+}
+.answer-control p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 5px 0 0;
+}
+.answer-control button {
+  flex-shrink: 0;
+  font-size: 12px;
+}

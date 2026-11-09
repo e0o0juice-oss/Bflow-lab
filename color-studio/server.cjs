@@ -4,7 +4,8 @@ const http = require("node:http"),
   path = require("node:path"),
   crypto = require("node:crypto");
 const content = require("./content.js"),
-  notes = require("./notes.cjs");
+  notes = require("./notes.cjs"),
+  conceptAnswers = require("./concept-answers.cjs");
 const fail = (status, message) => {
   throw Object.assign(Error(message), { status });
 };
@@ -83,6 +84,11 @@ function createApp({
       expiresAt: room.expiresAt,
       config: room.config,
       timer: timerState(room),
+      conceptAnswers: Object.fromEntries(
+        Object.entries(conceptAnswers).filter(
+          ([id]) => room.conceptReveals?.[id] === true,
+        ),
+      ),
     };
   }
   function hostState(room) {
@@ -90,6 +96,7 @@ function createApp({
       ...base(room),
       role: "host",
       notes: notes[room.stage],
+      conceptAnswerKey: conceptAnswers,
       groups: Array.from({ length: room.config.groupCount }, (_, i) => {
         const members = room.members.filter((m) => m.group === i + 1);
         return {
@@ -440,6 +447,7 @@ function createApp({
             active: false,
             boardOpen: false,
             ended: false,
+            conceptReveals: {},
             config: {
               steps: clone(content.steps),
               families: clone(content.families),
@@ -549,6 +557,15 @@ function createApp({
           if (r.ended && d.action !== "delete")
             fail(409, "수업이 종료되었습니다.");
           switch (d.action) {
+            case "concept-answer":
+              if (
+                !Object.hasOwn(conceptAnswers, d.question) ||
+                typeof d.value !== "boolean"
+              )
+                fail(400, "문제와 공개 여부를 확인해주세요.");
+              r.conceptReveals ||= {};
+              r.conceptReveals[d.question] = d.value;
+              break;
             case "stage":
               if (!Number.isInteger(d.stage) || d.stage < 0 || d.stage > 8)
                 fail(400, "단계를 확인해주세요.");
