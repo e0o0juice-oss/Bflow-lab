@@ -204,30 +204,6 @@ function loadLocal(initial) {
   localSave();
 }
 function view(name) {
-  if (name === "board") {
-    if (session?.role === "host") {
-      view("teacher");
-      const panel = $("#host-posts")?.closest("details");
-      if (panel) {
-        panel.open = true;
-        loadHostBoard();
-        panel.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    } else {
-      if (!session && !trial) {
-        view("workbook");
-        return;
-      }
-      view("workbook");
-      tab("style");
-      $("#style-board").scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-    $$(".header [data-view]").forEach((e) =>
-      e.classList.toggle("active", e.dataset.view === "board"),
-    );
-    return;
-  }
-
   if (name === "teacher" && session?.role !== "host") {
     notify("강사 권한이 필요합니다.", true);
     return;
@@ -245,6 +221,7 @@ function view(name) {
   if (name === "workbook") renderBook();
   if (name === "lesson") renderLesson();
   if (name === "teacher") renderTeacher();
+  if (name === "board") loadGallery();
   window.scrollTo(0, 0);
 }
 $$("[data-view]").forEach((b) => (b.onclick = () => view(b.dataset.view)));
@@ -1765,6 +1742,45 @@ async function prepareImage(file) {
     image.close();
   }
 }
+let galleryRequest = 0;
+async function loadGallery() {
+  const list = $("#gallery-posts"),
+    revision = ++galleryRequest;
+  list.replaceChildren(el("p", "게시물을 불러오고 있어요.", "muted"));
+  if (!session) {
+    list.replaceChildren(
+      el(
+        "p",
+        "수업에 참여하면 같은 조 학생들이 올린 자료를 볼 수 있어요.",
+        "muted",
+      ),
+      button("수업 참여하기", () => {
+        view("home");
+        $("#entry-panel").scrollIntoView({ behavior: "smooth" });
+      }),
+    );
+    return;
+  }
+  try {
+    const { posts } = await api("board");
+    if (revision !== galleryRequest) return;
+    list.replaceChildren();
+    if (!posts.length)
+      list.append(el("p", "아직 올라온 자료가 없어요.", "muted"));
+    posts.forEach((p) => list.append(postCard(p, false, true)));
+  } catch (e) {
+    if (revision !== galleryRequest) return;
+    list.replaceChildren(
+      el(
+        "p",
+        "게시물을 불러오지 못했어요. 연결 후 새로고침을 눌러주세요.",
+        "muted",
+      ),
+    );
+  }
+}
+$("#gallery-refresh").onclick = () => loadGallery();
+
 async function loadBoard() {
   if (!session || session.role !== "member") {
     if (currentTab === "style") renderBoard();
@@ -1937,7 +1953,7 @@ function renderBoard() {
     );
   boardPosts.forEach((p) => list.append(postCard(p, false)));
 }
-function postCard(p, host) {
+function postCard(p, host, readOnly = false) {
   const card = el("article", undefined, "post-card");
   card.dataset.postId = p.id;
   card.append(
@@ -1958,7 +1974,7 @@ function postCard(p, host) {
     el("p", p.reason, "post-reason"),
     el("p", p.words.join(" · "), "muted"),
   );
-  if (host) {
+  if (host && !readOnly) {
     card.append(
       el(
         "p",
@@ -1973,7 +1989,7 @@ function postCard(p, host) {
     );
     show.disabled = !p.consent || room.ended;
     card.append(show);
-  } else if (p.owner) {
+  } else if (p.owner && !readOnly) {
     const label = el("label", undefined, "consent-label");
     const consent = el("input");
     consent.type = "checkbox";
@@ -2002,6 +2018,7 @@ function postCard(p, host) {
     comments.append(line);
   });
   card.append(comments);
+  if (readOnly) return card;
   if (!host) {
     const form = el("form", undefined, "comment-form"),
       input = el("textarea");

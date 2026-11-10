@@ -285,9 +285,17 @@ test(
       );
       await student.waitForFunction(() =>
         document
-          .querySelector("#post-list")
+          .querySelector("#gallery-posts")
           ?.textContent.includes("[두 펠트지 비교]"),
       );
+      assert.equal(await student.locator("#board.active").count(), 1);
+      assert.equal(
+        await student
+          .locator("#board input, #board textarea, #board form")
+          .count(),
+        0,
+      );
+      await student.click('.header [data-view="workbook"]');
       await student.click('[data-tab="summary"]');
       let extraDownloads = 0;
       student.on("download", () => extraDownloads++);
