@@ -259,6 +259,16 @@ test(
         mimeType: "image/png",
         buffer: png,
       });
+      await student.setInputFiles("#felt-photo-b", {
+        name: "felt-b.png",
+        mimeType: "image/png",
+        buffer: png,
+      });
+      await student.waitForFunction(() =>
+        document
+          .querySelector("#felt-photo-status")
+          .textContent.includes("사진 2장 준비 완료"),
+      );
       await student
         .getByRole("button", {
           name: "사진과 비교 기록을 우리 조에 공유",

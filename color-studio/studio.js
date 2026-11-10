@@ -993,26 +993,103 @@ function renderFeltComparison(box) {
   file.type = "file";
   file.accept = "image/jpeg,image/png,image/webp";
   file.id = "felt-photo";
-  file.setAttribute("aria-label", "A·B 펠트지 비교 사진");
+  file.setAttribute("aria-label", "펠트지 A 사진 또는 A·B를 함께 찍은 사진");
+  const secondFile = el("input");
+  secondFile.type = "file";
+  secondFile.accept = file.accept;
+  secondFile.id = "felt-photo-b";
+  secondFile.setAttribute("aria-label", "펠트지 B 사진");
+  const photoStatus = el(
+    "p",
+    "A·B를 함께 찍은 사진 1장 또는 각각 찍은 사진 2장을 올릴 수 있어요.",
+    "privacy-note",
+  );
+  photoStatus.id = "felt-photo-status";
+  photoStatus.setAttribute("role", "status");
   const preview = el("img");
   preview.hidden = true;
   preview.alt = "두 펠트지 비교 사진 미리보기";
   preview.style.maxWidth = "100%";
   let photo = null,
     request = null;
-  file.onchange = async () => {
+  let photoRevision = 0,
+    processing = false;
+  file.onchange = secondFile.onchange = async () => {
+    const revision = ++photoRevision;
     request = null;
+    photo = null;
+    processing = true;
+    preview.hidden = true;
+    photoStatus.textContent = "사진을 준비하고 있어요…";
     try {
-      photo = await prepareImage(file.files[0]);
+      const files = [file.files[0], secondFile.files[0]].filter(Boolean);
+      const prepared = await Promise.all(files.map(prepareImage));
+      let combined = prepared[0] || null;
+      if (prepared.length === 2) {
+        const images = await Promise.all(
+          prepared.map(
+            (src) =>
+              new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () =>
+                  reject(
+                    new Error("사진을 읽을 수 없어요. 다시 선택해주세요."),
+                  );
+                image.src = src;
+              }),
+          ),
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = 1600;
+        canvas.height = 1000;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f5f5f7";
+        ctx.fillRect(0, 0, 1600, 1000);
+        images.forEach((image, i) => {
+          const scale = Math.min(760 / image.width, 900 / image.height);
+          const width = image.width * scale,
+            height = image.height * scale;
+          ctx.drawImage(
+            image,
+            i * 800 + 20 + (760 - width) / 2,
+            80 + (900 - height) / 2,
+            width,
+            height,
+          );
+          ctx.fillStyle = "#1d1d1f";
+          ctx.font = "32px sans-serif";
+          ctx.fillText(i === 0 ? "A" : "B", i * 800 + 24, 50);
+        });
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.85),
+        );
+        combined = await prepareImage(
+          new File([blob], "felt-comparison.jpg", { type: "image/jpeg" }),
+        );
+      }
+      if (revision !== photoRevision) return;
+      photo = combined;
       preview.src = photo || "";
       preview.hidden = !photo;
+      photoStatus.textContent =
+        files.length === 2
+          ? "사진 2장 준비 완료 · 왼쪽 A, 오른쪽 B로 묶어 공유하고 PDF에도 저장해요."
+          : files.length
+            ? "사진 1장 준비 완료 · 다른 사진은 아래 B에 추가할 수 있어요."
+            : "사진을 선택해주세요.";
     } catch (e) {
+      if (revision !== photoRevision) return;
       photo = null;
+      photoStatus.textContent = "사진을 준비하지 못했어요. 다시 선택해주세요.";
       report(e);
+    } finally {
+      if (revision === photoRevision) processing = false;
     }
   };
   const share = button("사진과 비교 기록을 우리 조에 공유", async () => {
-    if (!photo) return notify("먼저 펠트지 두 장을 찍은 사진을 선택해주세요.");
+    if (processing) return notify("사진 준비가 끝나면 공유해주세요.");
+    if (!photo) return notify("먼저 펠트지 사진을 선택해주세요.");
     if (!session?.member || !room?.boardOpen || room.ended)
       return notify(
         "수업에 참여하고 강사가 공유 활동을 열면 올릴 수 있어요. 글 기록은 자동 저장돼요.",
@@ -1041,6 +1118,9 @@ function renderFeltComparison(box) {
       request = null;
       photo = null;
       file.value = "";
+      secondFile.value = "";
+      photoStatus.textContent =
+        "사진을 공유했어요. 새 비교 사진도 올릴 수 있어요.";
       preview.hidden = true;
       notify("같은 조에 공유했어요. 사진과 기록은 마지막 PDF에도 포함돼요.");
       await loadBoard();
@@ -1050,8 +1130,24 @@ function renderFeltComparison(box) {
       share.disabled = false;
     }
   });
+  const firstLabel = el(
+    "label",
+    "사진 A · 두 펠트지를 함께 찍었다면 여기에 1장만",
+    "field-label",
+  );
+  firstLabel.htmlFor = file.id;
+  const secondLabel = el(
+    "label",
+    "사진 B · 따로 찍었을 때 추가 (선택)",
+    "field-label",
+  );
+  secondLabel.htmlFor = secondFile.id;
   section.append(
+    firstLabel,
     file,
+    secondLabel,
+    secondFile,
+    photoStatus,
     preview,
     share,
     el(
