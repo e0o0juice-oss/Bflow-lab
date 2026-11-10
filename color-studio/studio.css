@@ -2620,3 +2620,18 @@ input[type="file"] {
     font-size: 24px;
   }
 }
+
+/* Keep the shared board visible below the sticky navigation. */
+#style-board,
+#host-posts {
+  scroll-margin-top: 120px;
+}
+@media (max-width: 700px) {
+  .header nav {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .header nav button {
+    min-height: 44px;
+  }
+}

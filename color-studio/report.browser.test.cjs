@@ -268,7 +268,11 @@ test(
       await student.waitForFunction(() =>
         document.body.textContent.includes("같은 조에 공유했어요. 사진과 기록"),
       );
-      await student.click('[data-tab="style"]');
+      await student.click('.header [data-view="board"]');
+      assert.deepEqual(
+        await student.locator(".header nav button").allTextContents(),
+        ["스튜디오", "강의 화면", "게시판", "나의 워크북"],
+      );
       await student.waitForFunction(() =>
         document
           .querySelector("#post-list")

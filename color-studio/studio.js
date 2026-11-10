@@ -204,6 +204,30 @@ function loadLocal(initial) {
   localSave();
 }
 function view(name) {
+  if (name === "board") {
+    if (session?.role === "host") {
+      view("teacher");
+      const panel = $("#host-posts")?.closest("details");
+      if (panel) {
+        panel.open = true;
+        loadHostBoard();
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } else {
+      if (!session && !trial) {
+        view("workbook");
+        return;
+      }
+      view("workbook");
+      tab("style");
+      $("#style-board").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    $$(".header [data-view]").forEach((e) =>
+      e.classList.toggle("active", e.dataset.view === "board"),
+    );
+    return;
+  }
+
   if (name === "teacher" && session?.role !== "host") {
     notify("강사 권한이 필요합니다.", true);
     return;
