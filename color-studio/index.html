@@ -135,8 +135,9 @@
               <option value="6">6조</option>
             </select>
             <p class="muted">
-              조는 참여 후 고정됩니다. 같은 조에만 게시물과 별명이 공개돼요.
-              개인 관찰 기록은 본인에게만 제공됩니다.
+              같은 조에만 게시물과 별명이 공개돼요. 조를 잘못 골랐다면 자료를
+              올리기 전에 강사에게 알려주세요. 개인 관찰 기록은 본인에게만
+              제공됩니다.
             </p>
             <button class="primary wide" type="submit">수업 참여하기 →</button>
           </form>
@@ -162,6 +163,27 @@
           </div>
           <ol id="schedule-list"></ol>
         </section>
+        <details class="gallery-page">
+          <summary>강사 권한 복구 · 다른 브라우저에서 이어 진행하기</summary>
+          <form id="recover-host-form">
+            <label for="recover-room">6자리 수업 코드</label
+            ><input
+              id="recover-room"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              required
+            />
+            <label for="recover-secret"
+              >강사 복구 코드 · 학생 참여 코드와 달라요</label
+            ><input
+              id="recover-secret"
+              type="password"
+              autocomplete="off"
+              required
+            />
+            <button class="outline-button" type="submit">강사 권한 복구</button>
+          </form>
+        </details>
         <footer>
           색은 정답보다 관찰에 가까워요.<span
             >화면의 색은 개념 학습용입니다. 진단 활동은 실물 색을 기준으로
@@ -460,6 +482,9 @@
           </p>
           <button id="gallery-refresh" class="outline-button">
             게시물 새로고침
+          </button>
+          <button id="gallery-write" class="outline-button">
+            워크북에서 자료 올리기 · 의견 남기기
           </button>
           <div id="gallery-posts" class="post-list" aria-live="polite"></div>
         </div>

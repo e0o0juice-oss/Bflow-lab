@@ -176,6 +176,10 @@ test(
         buffer: png,
       });
       await student.waitForSelector("#upload-preview:visible");
+      await student.reload();
+      await student.waitForSelector("#workbook.active");
+      await student.click('[data-tab="style"]');
+      await student.waitForSelector("#upload-preview:visible");
       await student.fill(
         "#style-reason",
         "블루와 아이보리의 부드러운 대비가 좋아서 골랐어요.",
@@ -269,6 +273,25 @@ test(
           .querySelector("#felt-photo-status")
           .textContent.includes("사진 2장 준비 완료"),
       );
+      await student.click('[data-tab="basics"]');
+      await student.click('[data-tab="concepts"]');
+      assert.equal(
+        await student.locator("#felt-photo").evaluate((e) => e.files.length),
+        1,
+      );
+      assert.equal(
+        await student.locator("#felt-photo-b").evaluate((e) => e.files.length),
+        1,
+      );
+      await student.reload();
+      await student.waitForSelector("#workbook.active");
+      await student.click('[data-tab="concepts"]');
+      await student.waitForFunction(() =>
+        document
+          .querySelector("#felt-photo-status")
+          .textContent.includes("복원했어요"),
+      );
+      assert.equal(await student.inputValue("#feltA"), "연한 코랄 펠트");
       await student
         .getByRole("button", {
           name: "사진과 비교 기록을 우리 조에 공유",

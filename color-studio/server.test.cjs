@@ -618,3 +618,142 @@ test("final reflection is private, bounded and retained; PDF fonts negotiate Bro
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("classroom safeguards: automatic sharing, combined activity timer, group correction and host recovery", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "color-safeguards-")),
+    s = await start(dir);
+  try {
+    const room = await s.req("rooms", { method: "POST", data: {} }),
+      p = "r/" + room.data.code,
+      host = room.cookie;
+    const student = await s.req(p + "/join", {
+        method: "POST",
+        data: { name: "조 수정 학생", group: 1 },
+      }),
+      member = student.cookie;
+    assert.equal(
+      (
+        await s.req(p + "/control", {
+          method: "POST",
+          cookie: member,
+          data: {
+            action: "move-member",
+            memberId: student.data.member.id,
+            group: 2,
+          },
+        })
+      ).status,
+      403,
+    );
+    let moved = await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: {
+        action: "move-member",
+        memberId: student.data.member.id,
+        group: 2,
+      },
+    });
+    assert.equal(moved.status, 200);
+    assert.equal((await s.req(p, { cookie: member })).data.member.group, 2);
+    let r = await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: { action: "stage", stage: 2 },
+    });
+    assert.equal(r.data.boardOpen, true);
+    r = await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: { action: "active", value: true },
+    });
+    assert(r.data.timer.endsAt);
+    assert.equal(r.data.active, true);
+    r = await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: { action: "active", value: false },
+    });
+    assert.equal(r.data.timer.endsAt, null);
+    const post = await s.req(p + "/board", {
+      method: "POST",
+      cookie: member,
+      data: {
+        reason: "옮긴 조 자료",
+        image: PNG,
+        words: [],
+        consent: false,
+        writeId: "move-post",
+      },
+    });
+    assert.equal(post.status, 201);
+    assert.equal(
+      (
+        await s.req(p + "/control", {
+          method: "POST",
+          cookie: host,
+          data: {
+            action: "move-member",
+            memberId: student.data.member.id,
+            group: 3,
+          },
+        })
+      ).status,
+      409,
+    );
+    const secret = await s.req(p + "/control", {
+      method: "POST",
+      cookie: host,
+      data: { action: "recovery-code" },
+    });
+    assert.match(secret.data.recoveryCode, /^[a-f0-9]{32}$/);
+    const publicState = await s.req(p, { cookie: member });
+    assert(
+      !JSON.stringify(publicState.data).includes(secret.data.recoveryCode),
+    );
+    assert.equal(
+      (
+        await s.req(p + "/recover-host", {
+          method: "POST",
+          data: { recoveryCode: "bad" },
+        })
+      ).status,
+      403,
+    );
+    const recovered = await s.req(p + "/recover-host", {
+      method: "POST",
+      data: { recoveryCode: secret.data.recoveryCode },
+    });
+    assert.equal(recovered.status, 200);
+    assert(recovered.cookie);
+    assert.equal((await s.req(p + "/host", { cookie: host })).status, 403);
+    const next = await s.req(p + "/control", {
+      method: "POST",
+      cookie: recovered.cookie,
+      data: { action: "recovery-code" },
+    });
+    assert.equal(next.status, 200);
+    assert.equal(
+      (
+        await s.req(p + "/recover-host", {
+          method: "POST",
+          data: { recoveryCode: secret.data.recoveryCode },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await s.req(p + "/control", {
+          method: "POST",
+          cookie: member,
+          data: { action: "recovery-code" },
+        })
+      ).status,
+      403,
+    );
+  } finally {
+    await s.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -499,7 +499,11 @@ export async function createReport(raw, assets) {
     paragraph("나의 스타일 보드", "아직 직접 올린 게시물이 없어요.");
   for (let i = 0; i < model.posts.length; i++) {
     const post = model.posts[i];
-    heading("나의 스타일 " + String(i + 1).padStart(2, "0"));
+    heading(
+      (post.reason.startsWith("[두 펠트지 비교]")
+        ? "펠트지 비교 자료 "
+        : "나의 스타일 ") + String(i + 1).padStart(2, "0"),
+    );
     if (post.hasImage) {
       const asset = assets.images?.find((a) => a.id === post.id);
       if (!asset)
@@ -523,7 +527,12 @@ export async function createReport(raw, assets) {
       });
       y -= size.height + 30;
     }
-    paragraph("이 스타일을 고른 이유", post.reason);
+    paragraph(
+      post.reason.startsWith("[두 펠트지 비교]")
+        ? "사진과 함께 남긴 관찰"
+        : "이 스타일을 고른 이유",
+      post.reason,
+    );
     paragraph("표현하고 싶은 이미지", post.words.join(" · "));
     if (post.feedback.length) {
       for (let j = 0; j < post.feedback.length; j++)

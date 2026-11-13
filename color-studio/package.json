@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.cjs",
     "test": "node --test server.test.cjs",
-    "test:browser": "node --test browser.test.cjs report.browser.test.cjs",
+    "test:browser": "node --test browser.test.cjs report.browser.test.cjs safeguards.browser.test.cjs",
     "test:report": "npm test --prefix report",
     "build:report": "npm run build --prefix report"
   }

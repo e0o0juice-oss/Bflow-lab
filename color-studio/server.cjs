@@ -477,6 +477,21 @@ function createApp({
         const r = rooms[match[1]],
           route = match[2] || "";
         if (!r) fail(404, "수업이 없거나 보관 기간이 끝났습니다.");
+        if (route === "recover-host" && req.method === "POST") {
+          const d = await body(req, 1000);
+          if (
+            !r.hostRecoveryHash ||
+            hash(str(d.recoveryCode || "", 100)) !== r.hostRecoveryHash
+          )
+            fail(403, "수업 코드와 강사 복구 코드를 확인해주세요.");
+          const t = token();
+          r.hostHash = hash(t);
+          persist();
+          setCookie(res, req, r.code, "host", t);
+          for (const stream of streams.get(r.code) || [])
+            if (stream.identity.role === "host") stream.res.end();
+          return json(res, 200, hostState(r));
+        }
         if (route === "info" && req.method === "GET")
           return json(res, 200, {
             code: r.code,
@@ -562,6 +577,35 @@ function createApp({
           if (r.ended && d.action !== "delete")
             fail(409, "수업이 종료되었습니다.");
           switch (d.action) {
+            case "recovery-code": {
+              const recoveryCode = crypto.randomBytes(16).toString("hex");
+              r.hostRecoveryHash = hash(recoveryCode);
+              persist();
+              return json(res, 200, { recoveryCode });
+            }
+            case "move-member": {
+              const member = r.members.find((m) => m.id === d.memberId);
+              if (
+                !member ||
+                !Number.isInteger(d.group) ||
+                d.group < 1 ||
+                d.group > r.config.groupCount
+              )
+                fail(400, "참여자와 조를 확인해주세요.");
+              if (
+                r.posts.some(
+                  (p) =>
+                    p.memberId === member.id ||
+                    p.comments.some((c) => c.memberId === member.id),
+                )
+              )
+                fail(
+                  409,
+                  "이미 자료나 댓글을 공유한 학생은 개인정보 보호를 위해 조를 바꿀 수 없어요. 해당 게시물과 댓글을 먼저 정리해주세요.",
+                );
+              member.group = d.group;
+              break;
+            }
             case "concept-answer":
               if (
                 !Object.hasOwn(conceptAnswers, d.question) ||
@@ -575,6 +619,7 @@ function createApp({
               if (!Number.isInteger(d.stage) || d.stage < 0 || d.stage > 8)
                 fail(400, "단계를 확인해주세요.");
               r.stage = d.stage;
+              if (d.stage === 2 || d.stage === 7) r.boardOpen = true;
               r.slide = 0;
               r.active = false;
               r.timer = {
@@ -597,6 +642,15 @@ function createApp({
               break;
             case "active":
               r.active = !!d.value;
+              if (r.active) {
+                if (!r.timer.endsAt)
+                  r.timer.endsAt =
+                    now() + (r.timer.remainingMs || r.timer.durationMs);
+                if (r.stage === 2 || r.stage === 7) r.boardOpen = true;
+              } else {
+                r.timer.remainingMs = timerState(r).remainingMs;
+                r.timer.endsAt = null;
+              }
               break;
             case "board":
               r.boardOpen = !!d.value;

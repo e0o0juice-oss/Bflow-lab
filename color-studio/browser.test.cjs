@@ -171,7 +171,8 @@ test(
         await host.locator(".teacher-timer>.live-time").innerText(),
         paused,
       );
-      await host.click("#board-toggle");
+      if ((await host.locator("#board-toggle").innerText()).includes("열기"))
+        await host.click("#board-toggle");
       await a.click('[data-tab="style"]');
       await a.waitForSelector("#board-form");
       await a.locator("#image-words button").first().click();

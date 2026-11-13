@@ -297,6 +297,34 @@ async function enter(s) {
   renderStatus();
   cacheMembership();
 }
+$("#recover-host-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const codeInput = $("#recover-room").value.trim(),
+    secret = $("#recover-secret").value.trim(),
+    submit = $("#recover-host-form button");
+  submit.disabled = true;
+  try {
+    const response = await fetch(
+      "/color-studio/api/r/" + encodeURIComponent(codeInput) + "/recover-host",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recoveryCode: secret }),
+      },
+    );
+    const data = await response.json();
+    if (!response.ok) throw Error(data.error);
+    $("#recover-secret").value = "";
+    await enter(data);
+    notify(
+      "강사 권한을 복구했어요. 이 브라우저에서 발표 창을 다시 열어주세요.",
+    );
+  } catch (error) {
+    report(error);
+  } finally {
+    submit.disabled = false;
+  }
+};
 $("#create-room").onclick = async () => {
   const b = $("#create-room");
   b.disabled = true;
@@ -385,7 +413,20 @@ function connect() {
     const fresh = JSON.parse(e.data),
       oldStage = room?.stage,
       oldAnswers = JSON.stringify(room?.conceptAnswers || {});
+    if (
+      session?.member &&
+      fresh.member &&
+      session.member.group !== fresh.member.group
+    ) {
+      session.member.group = fresh.member.group;
+      boardPosts = [];
+      notify("강사가 조를 수정했어요. 새 조의 게시물을 보여드려요.");
+    }
     room = fresh;
+    if ($("#board")?.classList.contains("active")) {
+      clearTimeout(galleryTimer);
+      galleryTimer = setTimeout(loadGallery, 300);
+    }
     connected = true;
     cacheMembership();
     timerOffset = fresh.timer.serverNow - Date.now();
@@ -406,6 +447,10 @@ function connect() {
         }
       }
       renderStatus();
+      if (fresh.stage === 6 && oldStage !== 6) {
+        reportLibrary().catch(() => {});
+        reportFonts().catch(() => {});
+      }
       if (oldAnswers !== JSON.stringify(fresh.conceptAnswers || {}))
         renderConceptAnswers();
       if (JSON.stringify(fresh.config) !== lastConfig) {
@@ -503,7 +548,8 @@ function renderStatus() {
   $("#group").disabled = true;
   if (session.member) {
     $("#group").value = session.member.group + "조";
-    $("#group-status").textContent = session.member.name + " · 참여 후 조 고정";
+    $("#group-status").textContent =
+      session.member.name + " · 조를 잘못 골랐다면 강사에게 알려주세요";
     $("#storage-note").textContent =
       "기기에 먼저 저장하고 서버에도 자동 저장해요. 브라우저 데이터를 지우기 전에는 결과지를 내려받아 주세요.";
   }
@@ -794,6 +840,8 @@ function conceptPick(box, id, question, options) {
 }
 function renderConcepts() {
   const box = $("#tab-concepts");
+  const feltDraft = $("#felt-comparison");
+  if (feltDraft) feltDraft.remove();
   heading(
     box,
     "COLOR LAB",
@@ -889,13 +937,45 @@ function renderConcepts() {
       "privacy-note",
     ),
   );
-  renderFeltComparison(box);
+  if (feltDraft && feltDraft.dataset.draftKey === localKey)
+    box.append(feltDraft);
+  else renderFeltComparison(box);
   renderConceptAnswers();
+}
+
+async function photoDraft(action, suffix, value) {
+  const db = await new Promise((resolve, reject) => {
+    const request = indexedDB.open("color-studio-photo-drafts", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("drafts");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction(
+        "drafts",
+        action === "get" ? "readonly" : "readwrite",
+      );
+      const store = transaction.objectStore("drafts"),
+        key = localKey + suffix;
+      const request =
+        action === "get"
+          ? store.get(key)
+          : action === "put"
+            ? store.put(value, key)
+            : store.delete(key);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } finally {
+    db.close();
+  }
 }
 
 function renderFeltComparison(box) {
   const section = el("section", undefined, "concept-section");
   section.id = "felt-comparison";
+  section.dataset.draftKey = localKey;
   section.append(
     el("p", "실물 탐구 · 약 15분", "eyebrow"),
     el("h3", "비슷한 두 색, 얼굴에서는 어떻게 다를까요?"),
@@ -968,7 +1048,7 @@ function renderFeltComparison(box) {
   );
   const file = el("input");
   file.type = "file";
-  file.accept = "image/jpeg,image/png,image/webp";
+  file.accept = "image/*";
   file.id = "felt-photo";
   file.setAttribute("aria-label", "펠트지 A 사진 또는 A·B를 함께 찍은 사진");
   const secondFile = el("input");
@@ -1047,6 +1127,15 @@ function renderFeltComparison(box) {
       }
       if (revision !== photoRevision) return;
       photo = combined;
+      try {
+        if (photo) await photoDraft("put", "-felt", photo);
+        else await photoDraft("delete", "-felt");
+      } catch {
+        notify(
+          "사진 초안을 기기에 저장하지 못했어요. 이 창에서 바로 제출해주세요.",
+          true,
+        );
+      }
       preview.src = photo || "";
       preview.hidden = !photo;
       photoStatus.textContent =
@@ -1064,6 +1153,17 @@ function renderFeltComparison(box) {
       if (revision === photoRevision) processing = false;
     }
   };
+  photoDraft("get", "-felt")
+    .then((saved) => {
+      if (saved && photoRevision === 0) {
+        photo = saved;
+        preview.src = saved;
+        preview.hidden = false;
+        photoStatus.textContent =
+          "저장된 사진 초안을 복원했어요. 그대로 제출하거나 새 사진으로 바꿀 수 있어요.";
+      }
+    })
+    .catch(() => {});
   const share = button("사진과 비교 기록을 우리 조에 공유", async () => {
     if (processing) return notify("사진 준비가 끝나면 공유해주세요.");
     if (!photo) return notify("먼저 펠트지 사진을 선택해주세요.");
@@ -1072,12 +1172,15 @@ function renderFeltComparison(box) {
         "수업에 참여하고 강사가 공유 활동을 열면 올릴 수 있어요. 글 기록은 자동 저장돼요.",
       );
     share.disabled = true;
+    file.disabled = true;
+    secondFile.disabled = true;
     try {
       const reason =
         "[두 펠트지 비교]\n" +
         fields
           .map(
-            ([id, title]) => title + ": " + (book.concepts[id] || "기록 없음"),
+            ([id, title]) =>
+              title + ": " + (book.concepts[id] || "기록 없음").slice(0, 180),
           )
           .join("\n");
       if (reason.length > 1500)
@@ -1094,6 +1197,7 @@ function renderFeltComparison(box) {
       await api("board", "POST", request);
       request = null;
       photo = null;
+      await photoDraft("delete", "-felt").catch(() => {});
       file.value = "";
       secondFile.value = "";
       photoStatus.textContent =
@@ -1105,6 +1209,8 @@ function renderFeltComparison(box) {
       report(e);
     } finally {
       share.disabled = false;
+      file.disabled = false;
+      secondFile.disabled = false;
     }
   });
   const firstLabel = el(
@@ -1129,7 +1235,7 @@ function renderFeltComparison(box) {
     share,
     el(
       "p",
-      "발표 공개는 기본으로 꺼져 있어요. 공유 화면에서 본인이 동의할 수 있어요. 업로드 전 새로고침하면 사진을 다시 선택해주세요.",
+      "사진 초안은 이 브라우저에 보관돼요. 공유 설명은 항목별 180자까지 담고, 전체 글은 내 워크북과 PDF에 남아요. 발표 공개 동의는 기본으로 꺼져 있어요.",
       "privacy-note",
     ),
   );
@@ -1718,12 +1824,16 @@ let uploadData = null,
   uploadBusy = false;
 async function prepareImage(file) {
   if (!file) return null;
-  if (
-    !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-    file.size > 10 * 1024 * 1024
-  )
-    throw Error("JPG·PNG·WebP 원본 10MB 이하를 골라주세요.");
-  const image = await createImageBitmap(file);
+  if (file.size > 10 * 1024 * 1024)
+    throw Error("사진 원본은 10MB 이하로 골라주세요.");
+  let image;
+  try {
+    image = await createImageBitmap(file);
+  } catch {
+    throw Error(
+      "이 사진 형식을 기기가 읽지 못했어요. 사진을 화면에 띄워 스크린샷으로 저장한 뒤 올려주세요. 아이폰 HEIC 사진은 JPG로 변환해도 돼요.",
+    );
+  }
   try {
     const scale = Math.min(1, 1600 / Math.max(image.width, image.height)),
       canvas = document.createElement("canvas");
@@ -1742,7 +1852,8 @@ async function prepareImage(file) {
     image.close();
   }
 }
-let galleryRequest = 0;
+let galleryRequest = 0,
+  galleryTimer;
 async function loadGallery() {
   const list = $("#gallery-posts"),
     revision = ++galleryRequest;
@@ -1780,6 +1891,13 @@ async function loadGallery() {
   }
 }
 $("#gallery-refresh").onclick = () => loadGallery();
+$("#gallery-write").onclick = () => {
+  view("workbook");
+  if (session?.role !== "host") {
+    tab("style");
+    $("#style-board").scrollIntoView({ behavior: "smooth" });
+  } else view("teacher");
+};
 
 async function loadBoard() {
   if (!session || session.role !== "member") {
@@ -1813,6 +1931,11 @@ function renderBoard() {
     );
     return;
   }
+  if ($("#board-form") && $("#board-form").dataset.draftKey !== localKey) {
+    box.replaceChildren();
+    uploadData = null;
+    uploadRequest = null;
+  }
   if (!$("#board-form")) {
     box.replaceChildren(
       el("h3", "우리 조 스타일 보드"),
@@ -1824,16 +1947,23 @@ function renderBoard() {
     );
     const form = el("form");
     form.id = "board-form";
+    form.dataset.draftKey = localKey;
     const label = el("label", "옷 · 액세서리 · 메이크업 캡처", "field-label");
     label.htmlFor = "style-file";
     const file = el("input");
     file.type = "file";
     file.id = "style-file";
-    file.accept = "image/jpeg,image/png,image/webp";
+    file.accept = "image/*";
     file.onchange = async () => {
       uploadRequest = null;
       try {
         uploadData = await prepareImage(file.files[0]);
+        await photoDraft("put", "-style", uploadData).catch(() =>
+          notify(
+            "사진 초안을 보관하지 못했어요. 이 창에서 바로 제출해주세요.",
+            true,
+          ),
+        );
         $("#upload-preview").src = uploadData || "";
         $("#upload-preview").hidden = !uploadData;
       } catch (e) {
@@ -1846,6 +1976,16 @@ function renderBoard() {
     preview.id = "upload-preview";
     preview.alt = "업로드할 스타일 이미지 미리보기";
     preview.hidden = true;
+    const draftKey = localKey;
+    photoDraft("get", "-style")
+      .then((saved) => {
+        if (saved && localKey === draftKey && !uploadData) {
+          uploadData = saved;
+          preview.src = saved;
+          preview.hidden = false;
+        }
+      })
+      .catch(() => {});
     const reasonLabel = el("label", "이 스타일을 고른 이유", "field-label");
     reasonLabel.htmlFor = "style-reason";
     const reason = el("textarea");
@@ -1889,7 +2029,7 @@ function renderBoard() {
       upload,
       el(
         "p",
-        "캡처에 이름·연락처·주문 내역이 있으면 잘라주세요. 이미지는 연결이 끊기면 현재 창에서 재시도할 수 있지만, 업로드 전 새로고침하면 다시 선택해야 해요.",
+        "캡처에 이름·연락처·주문 내역이 있으면 잘라주세요. 사진 초안은 이 브라우저에 보관하고 새로고침 후 복원해요. 브라우저 데이터를 지우면 초안도 사라집니다.",
         "privacy-note",
       ),
     );
@@ -1910,6 +2050,7 @@ function renderBoard() {
         await api("board", "POST", uploadRequest);
         uploadRequest = null;
         uploadData = null;
+        await photoDraft("delete", "-style").catch(() => {});
         reason.value = "";
         file.value = "";
         check.checked = false;
@@ -2063,6 +2204,19 @@ function postCard(p, host, readOnly = false) {
 }
 let settingsDraft = null;
 async function control(action, data = {}) {
+  if (
+    action === "stage" &&
+    room?.timer.endsAt &&
+    !confirm("단계를 바꾸면 현재 타이머가 초기화되고 멈춥니다. 이동할까요?")
+  )
+    return;
+  if (
+    action === "end" &&
+    !confirm(
+      "모두 PDF 파일을 저장하고 열어봤나요? 종료하면 새 기록과 댓글을 저장할 수 없어요.",
+    )
+  )
+    return;
   room = await api("control", "POST", { action, ...data });
   renderTeacherLive();
   if ($("#lesson").classList.contains("active")) renderLesson();
@@ -2103,11 +2257,65 @@ function renderTeacher() {
       }),
       el(
         "p",
-        "이 브라우저를 닫아도 권한 쿠키는 유지됩니다. 쿠키 삭제·시크릿 창 종료 시 강사 권한을 잃습니다. 수업은 생성 후 7일간 보관됩니다.",
+        "이 브라우저를 닫아도 권한 쿠키는 유지됩니다. 쿠키 삭제·시크릿 창 종료에 대비해 아래 강사 복구 코드를 미리 저장하세요. 수업은 생성 후 7일간 보관됩니다.",
         "privacy-note",
       ),
     );
-    left.append(join);
+    const readiness = el("details", undefined, "teacher-panel");
+    readiness.append(
+      el("summary", "수업 전 확인 · 강사 권한 복구"),
+      el(
+        "p",
+        "수업에 쓸 노트북에서 발표 창을 여세요. 새 수업은 매 수업마다 만들고, 학생 입장 → 사진 제출 → PDF 파일 열기를 미리 확인하세요. 수업 중에는 배포하지 마세요. Render 영구 디스크는 대시보드에서 확인해야 합니다.",
+      ),
+    );
+    const recoveryOutput = el("output");
+    recoveryOutput.id = "host-recovery-output";
+    readiness.append(
+      button("강사 복구 코드 발급 · 파일 저장", async () => {
+        try {
+          const result = await api("control", "POST", {
+            action: "recovery-code",
+          });
+          recoveryOutput.textContent = "복구 코드: " + result.recoveryCode;
+          const url = URL.createObjectURL(
+            new Blob(
+              [
+                "수업 코드: " +
+                  code +
+                  "\n강사 복구 코드: " +
+                  result.recoveryCode +
+                  "\n이 파일은 강사 권한을 복구합니다. 학생에게 공유하거나 발표 화면에 띄우지 마세요. 새 코드를 발급하면 이전 코드는 무효입니다.",
+              ],
+              { type: "text/plain;charset=utf-8" },
+            ),
+          );
+          const link = el("a");
+          link.href = url;
+          link.download = "강사-복구-" + code + ".txt";
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (error) {
+          report(error);
+        }
+      }),
+      recoveryOutput,
+      el(
+        "p",
+        "다른 브라우저에서는 첫 화면 ‘강사 권한 복구’에 수업 코드와 이 비밀 코드를 넣으세요. 재발급하면 이전 코드는 무효입니다. 학생에게 공유하지 마세요.",
+        "privacy-note",
+      ),
+    );
+    join.append(
+      el(
+        "p",
+        "자료 보관 만료: " +
+          new Date(room.expiresAt).toLocaleString("ko-KR") +
+          " · 내일 수업도 새 방으로 시작하세요.",
+        "privacy-note",
+      ),
+    );
+    left.append(join, readiness);
     const stages = el("section", undefined, "teacher-panel");
     stages.append(
       el("p", "THE WORKSHOP PLAN", "eyebrow"),
@@ -2132,7 +2340,7 @@ function renderTeacher() {
     for (const [id, label, action] of [
       ["sync-toggle", "단계 연결", "sync"],
       ["active-toggle", "활동 시작", "active"],
-      ["board-toggle", "스타일 공유 열기", "board"],
+      ["board-toggle", "자료 공유 열기", "board"],
     ]) {
       const b = button(label, () =>
         control(action, {
@@ -2237,12 +2445,7 @@ function renderTeacher() {
       button(
         "수업 종료",
         async () => {
-          if (
-            confirm(
-              "모두 기록을 내려받았나요? 수업을 종료하면 새 기록과 공유를 받지 않습니다.",
-            )
-          )
-            await control("end");
+          await control("end");
         },
         "outline-button destructive",
       ),
@@ -2320,10 +2523,12 @@ function renderTeacherLive() {
   $("#sync-toggle").textContent = room.sync
     ? "단계 연결 켜짐 ✓"
     : "단계 연결 꺼짐";
-  $("#active-toggle").textContent = room.active ? "활동 종료" : "활동 시작";
+  $("#active-toggle").textContent = room.active
+    ? "활동·타이머 일시정지"
+    : "활동·타이머 시작";
   $("#board-toggle").textContent = room.boardOpen
-    ? "스타일 공유 닫기"
-    : "스타일 공유 열기";
+    ? "자료 공유 닫기"
+    : "자료 공유 열기";
   $(".instructor-say").textContent = room.notes?.say || "";
   $(".instructor-run").textContent = room.notes?.run || "";
   const box = $("#group-progress");
@@ -2356,6 +2561,33 @@ function renderTeacherLive() {
             (m.online ? " · 접속 중" : " · 접속 대기"),
         ),
       );
+    for (const m of group.members) {
+      const row = el("label", m.name + " 조 수정 · ", "field-label"),
+        select = el("select");
+      select.setAttribute("aria-label", m.name + " 조 수정");
+      for (let i = 1; i <= config().groupCount; i++) {
+        const option = el("option", i + "조");
+        option.value = i;
+        select.append(option);
+      }
+      select.value = group.group;
+      select.onchange = async () => {
+        select.disabled = true;
+        try {
+          await control("move-member", {
+            memberId: m.id,
+            group: Number(select.value),
+          });
+        } catch (error) {
+          select.value = group.group;
+          report(error);
+        } finally {
+          select.disabled = false;
+        }
+      };
+      row.append(select);
+      e.append(row);
+    }
     box.append(e);
   }
   renderTeacherAnswers();
