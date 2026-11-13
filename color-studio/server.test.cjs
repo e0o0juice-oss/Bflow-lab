@@ -144,16 +144,16 @@ test("room ownership, private notes, same-group board, consent, save conflicts a
         "내 기록 비공개",
       ),
     );
-    assert.equal(
-      (
-        await s.req(p + "/board", {
-          method: "POST",
-          cookie: a,
-          data: { reason: "공유", image: PNG },
-        })
-      ).status,
-      409,
-    );
+    const immediate = await s.req(p + "/board", {
+      method: "POST",
+      cookie: a,
+      data: { reason: "바로 공유", image: PNG },
+    });
+    assert.equal(immediate.status, 201);
+    await s.req(p + "/board/" + immediate.data.id, {
+      method: "DELETE",
+      cookie: a,
+    });
     await s.req(p + "/control", {
       method: "POST",
       cookie: host,
@@ -752,6 +752,92 @@ test("classroom safeguards: automatic sharing, combined activity timer, group co
       ).status,
       403,
     );
+  } finally {
+    await s.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("participants upload PDF immediately; file access, deletion and restart remain isolated by group", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "color-pdf-upload-"));
+  let s = await start(dir);
+  try {
+    const created = await s.req("rooms", { method: "POST", data: {} }),
+      p = "r/" + created.data.code;
+    const a = await s.req(p + "/join", {
+        method: "POST",
+        data: { name: "스토리보드", group: 1 },
+      }),
+      b = await s.req(p + "/join", {
+        method: "POST",
+        data: { name: "다른 조", group: 2 },
+      });
+    const raw = Buffer.from("%PDF-1.4\n1 0 obj<</Type /Catalog>>endobj\n%%EOF"),
+      data = {
+        file: "data:application/pdf;base64," + raw.toString("base64"),
+        fileName: "스토리보드.pdf",
+        reason: "[스토리보드]",
+        writeId: "pdf-one",
+      };
+    const uploaded = await s.req(p + "/board", {
+      method: "POST",
+      cookie: a.cookie,
+      data,
+    });
+    assert.equal(uploaded.status, 201);
+    const posts = await s.req(p + "/board", { cookie: a.cookie });
+    assert.equal(posts.data.posts[0].file.name, "스토리보드.pdf");
+    assert.equal(posts.data.posts[0].image, false);
+    const download = async (cookie) =>
+      fetch(
+        s.base +
+          "/color-studio/api/" +
+          p +
+          "/board/" +
+          uploaded.data.id +
+          "/file",
+        { headers: cookie ? { Cookie: cookie } : {} },
+      );
+    let response = await download(a.cookie);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-disposition"), /attachment/);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), raw);
+    assert.equal((await download(b.cookie)).status, 404);
+    assert.equal((await download()).status, 403);
+    assert.equal(
+      (await s.req(p + "/board", { method: "POST", cookie: a.cookie, data }))
+        .status,
+      200,
+    );
+    assert.equal(
+      (
+        await s.req(p + "/board", {
+          method: "POST",
+          cookie: a.cookie,
+          data: {
+            ...data,
+            writeId: "bad",
+            file:
+              "data:application/pdf;base64," +
+              Buffer.from("not a pdf").toString("base64"),
+          },
+        })
+      ).status,
+      400,
+    );
+    await s.stop();
+    s = await start(dir);
+    assert.equal((await download(a.cookie)).status, 200);
+    assert.equal(
+      (
+        await s.req(p + "/board/" + uploaded.data.id, {
+          method: "DELETE",
+          cookie: a.cookie,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(fs.readdirSync(path.join(dir, "images")).length, 0);
   } finally {
     await s.stop();
     fs.rmSync(dir, { recursive: true, force: true });

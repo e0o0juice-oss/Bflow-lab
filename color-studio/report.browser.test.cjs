@@ -90,7 +90,7 @@ test(
         "#self-note",
         "연한 핑크에서 얼굴이 편안하게 느껴졌어요.",
       );
-      await host.click("#board-toggle");
+
       await student.click('[data-tab="style"]');
       await student.locator('#image-words button:text-is("차분한")').click();
       await student.locator('#image-words button:text-is("세련된")').click();
@@ -314,7 +314,7 @@ test(
       assert.equal(await student.locator("#board.active").count(), 1);
       assert.equal(
         await student
-          .locator("#board input, #board textarea, #board form")
+          .locator("#board #style-file, #board #image-words")
           .count(),
         0,
       );

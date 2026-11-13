@@ -2666,3 +2666,29 @@ input[type="file"] {
     grid-template-columns: 1fr;
   }
 }
+
+#gallery-composer {
+  margin: 28px 0;
+}
+#gallery-upload-form {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: #f5f5f7;
+  overflow-wrap: anywhere;
+}
+#gallery-upload-form input,
+#gallery-upload-form select,
+#gallery-upload-form textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+#gallery-upload-form label {
+  margin: 0;
+}
+#gallery-upload-form p {
+  margin: 0;
+}

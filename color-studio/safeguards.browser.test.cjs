@@ -94,7 +94,7 @@ test(
           .textContent.includes("자동 갱신 자료"),
       );
       assert.equal(
-        await m.locator("#board input, #board textarea, #board form").count(),
+        await m.locator("#board #style-file, #board #image-words").count(),
         0,
       );
       await m.click("#gallery-write");

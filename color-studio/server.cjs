@@ -79,7 +79,7 @@ function createApp({
       slide: room.slide,
       sync: room.sync,
       active: room.active,
-      boardOpen: room.boardOpen,
+      boardOpen: !room.ended,
       ended: room.ended,
       expiresAt: room.expiresAt,
       config: room.config,
@@ -137,6 +137,9 @@ function createApp({
       words: p.words,
       image: !!p.image,
       mime: p.mime,
+      file: p.file
+        ? { name: p.fileName, bytes: p.fileBytes, type: "application/pdf" }
+        : null,
       consent: p.consent,
       createdAt: p.createdAt,
       owner: identity.member?.id === p.memberId,
@@ -358,6 +361,20 @@ function createApp({
       : [];
     return out;
   }
+  function pdfData(data) {
+    if (!data) return null;
+    if (
+      typeof data !== "string" ||
+      !/^data:application\/pdf;base64,[A-Za-z0-9+/=]+$/.test(data)
+    )
+      fail(400, "PDF 파일을 선택해주세요.");
+    const buffer = Buffer.from(data.split(",")[1], "base64");
+    if (buffer.length > 10 * 1024 * 1024)
+      fail(413, "PDF는 10MB 이하여야 합니다.");
+    if (buffer.subarray(0, 5).toString() !== "%PDF-")
+      fail(400, "PDF 내용과 형식이 일치하지 않습니다.");
+    return { buffer };
+  }
   function imageData(data) {
     if (!data) return null;
     if (typeof data !== "string") fail(400, "이미지 형식 오류");
@@ -382,8 +399,10 @@ function createApp({
     return { buffer: b, mime: "image/" + m[1] };
   }
   function removeImages(room) {
-    for (const p of room.posts)
+    for (const p of room.posts) {
       if (p.image) fs.rmSync(path.join(imageDir, p.image), { force: true });
+      if (p.file) fs.rmSync(path.join(imageDir, p.file), { force: true });
+    }
   }
   function expire() {
     let changed = false;
@@ -450,7 +469,7 @@ function createApp({
             slide: 0,
             sync: true,
             active: false,
-            boardOpen: false,
+            boardOpen: true,
             ended: false,
             conceptReveals: {},
             config: {
@@ -762,22 +781,26 @@ function createApp({
         }
         if (route === "board" && req.method === "POST") {
           if (!a.member) fail(403, "참여자가 올리는 공간입니다.");
-          if (!r.boardOpen || r.ended)
-            fail(409, "강사가 공유 활동을 열면 올릴 수 있어요.");
-          const d = await body(req),
+          if (r.ended) fail(409, "종료된 수업에는 자료를 올릴 수 없어요.");
+          const d = await body(req, 15 * 1024 * 1024),
             reason = str(d.reason || "", 1500),
             img = imageData(d.image),
+            attachment = pdfData(d.file),
+            attachmentName = attachment
+              ? str(d.fileName || "스토리보드.pdf", 160)
+              : null,
             words = Array.isArray(d.words)
               ? d.words.slice(0, 12).map((w) => str(w, 30))
               : [];
-          if (!reason && !img)
-            fail(400, "이미지 또는 선택 이유를 입력해주세요.");
+          if (!reason && !img && !attachment)
+            fail(400, "파일 또는 설명을 입력해주세요.");
           if (
-            r.posts.length >= 200 ||
-            r.posts.filter((p) => p.group === a.member.group).length >= 40 ||
+            r.posts.length >= 600 ||
+            r.posts.filter((p) => p.group === a.member.group).length >= 100 ||
             r.posts.reduce((n, p) => n + (p.bytes || 0), 0) +
-              (img?.buffer.length || 0) >
-              100 * 1024 * 1024
+              (img?.buffer.length || 0) +
+              (attachment?.buffer.length || 0) >
+              500 * 1024 * 1024
           )
             fail(409, "수업 게시판 용량 한도입니다.");
           if (
@@ -792,8 +815,18 @@ function createApp({
             fs.writeFileSync(path.join(imageDir, image), img.buffer, {
               mode: 0o600,
             });
+          const attachedFile = attachment ? id + ".pdf" : null;
+          if (attachment)
+            fs.writeFileSync(
+              path.join(imageDir, attachedFile),
+              attachment.buffer,
+              { mode: 0o600 },
+            );
           r.posts.push({
             id,
+            file: attachedFile,
+            fileName: attachmentName,
+            fileBytes: attachment?.buffer.length || 0,
             memberId: a.member.id,
             group: a.member.group,
             name: a.member.name,
@@ -801,7 +834,7 @@ function createApp({
             words,
             image,
             mime: img?.mime || null,
-            bytes: img?.buffer.length || 0,
+            bytes: (img?.buffer.length || 0) + (attachment?.buffer.length || 0),
             consent: d.consent === true,
             createdAt: now(),
             comments: [],
@@ -812,19 +845,33 @@ function createApp({
           return json(res, 201, { id });
         }
         const pm = route.match(
-          /^board\/([a-f0-9-]{36})(?:\/(image|comments|consent))?$/,
+          /^board\/([a-f0-9-]{36})(?:\/(image|file|comments|consent))?$/,
         );
         if (pm) {
           const p = r.posts.find((p) => p.id === pm[1]);
           if (!p || (a.role !== "host" && p.group !== a.member.group))
             fail(404, "이 조에서 볼 수 없는 게시물입니다.");
+          if (pm[2] === "file" && req.method === "GET") {
+            if (!p.file) fail(404, "첨부 파일이 없습니다.");
+            const target = path.join(imageDir, p.file);
+            if (!fs.existsSync(target)) fail(404, "첨부 파일이 없습니다.");
+            res.writeHead(200, {
+              ...headers,
+              "Content-Type": "application/pdf",
+              "Content-Disposition":
+                "attachment; filename=storyboard.pdf; filename*=UTF-8''" +
+                encodeURIComponent(p.fileName),
+              "Content-Length": fs.statSync(target).size,
+            });
+            return fs.createReadStream(target).pipe(res);
+          }
           if (pm[2] === "image" && req.method === "GET") {
             if (!p.image) fail(404, "이미지가 없습니다.");
             return sendImage(res, p);
           }
           if (pm[2] === "comments" && req.method === "POST") {
             if (!a.member) fail(403, "조 참여자만 의견을 남길 수 있습니다.");
-            if (!r.boardOpen || r.ended) fail(409, "공유 활동이 닫혔습니다.");
+            if (r.ended) fail(409, "종료된 수업에는 의견을 남길 수 없어요.");
             const d = await body(req, 3000),
               text = str(d.text, 500);
             if (!text) fail(400, "의견을 입력해주세요.");
@@ -856,6 +903,7 @@ function createApp({
               fail(403, "작성자만 삭제할 수 있습니다.");
             if (p.image)
               fs.rmSync(path.join(imageDir, p.image), { force: true });
+            if (p.file) fs.rmSync(path.join(imageDir, p.file), { force: true });
             r.posts = r.posts.filter((v) => v !== p);
             if (r.presentationPostId === p.id) r.presentationPostId = null;
             persist();

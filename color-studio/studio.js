@@ -1167,9 +1167,9 @@ function renderFeltComparison(box) {
   const share = button("사진과 비교 기록을 우리 조에 공유", async () => {
     if (processing) return notify("사진 준비가 끝나면 공유해주세요.");
     if (!photo) return notify("먼저 펠트지 사진을 선택해주세요.");
-    if (!session?.member || !room?.boardOpen || room.ended)
+    if (!session?.member || room.ended)
       return notify(
-        "수업에 참여하고 강사가 공유 활동을 열면 올릴 수 있어요. 글 기록은 자동 저장돼요.",
+        "수업에 참여하면 바로 올릴 수 있어요. 종료된 수업은 새 자료를 받지 않습니다.",
       );
     share.disabled = true;
     file.disabled = true;
@@ -1854,7 +1854,182 @@ async function prepareImage(file) {
 }
 let galleryRequest = 0,
   galleryTimer;
+
+function renderGalleryComposer() {
+  const box = $("#gallery-composer");
+  if (session?.role !== "member") {
+    box.replaceChildren();
+    return;
+  }
+  if (box.dataset.draftKey === localKey && box.firstChild) return;
+  box.dataset.draftKey = localKey;
+  const form = el("form"),
+    label = el("label", "사진·PDF·스토리보드 올리기", "field-label");
+  form.id = "gallery-upload-form";
+  const kind = el("select");
+  kind.id = "gallery-kind";
+  kind.setAttribute("aria-label", "자료 종류");
+  ["스토리보드", "펠트지 비교", "스타일 자료", "기타 수업 자료"].forEach(
+    (name) => kind.append(el("option", name)),
+  );
+  const file = el("input");
+  file.type = "file";
+  file.multiple = true;
+  file.accept = "image/*,application/pdf,.pdf";
+  file.id = "gallery-files";
+  label.htmlFor = file.id;
+  const reason = el("textarea");
+  reason.id = "gallery-description";
+  reason.rows = 3;
+  reason.maxLength = 1400;
+  reason.setAttribute("aria-label", "자료 설명 (선택)");
+  reason.placeholder = "자료 설명을 적어주세요. 파일만 올려도 괜찮아요.";
+  const selected = el(
+      "p",
+      "사진·PDF를 최대 5개 선택 · 파일당 원본 10MB 이하",
+      "muted",
+    ),
+    status = el("p", undefined, "privacy-note");
+  status.id = "gallery-upload-status";
+  status.setAttribute("role", "status");
+  const submit = el("button", "우리 조에 자료 올리기 ↑", "primary wide");
+  submit.type = "submit";
+  submit.id = "gallery-submit";
+  submit.disabled = !!room.ended;
+  let pending = [],
+    ids = [],
+    busy = false,
+    draftTimer,
+    restored = false;
+  const key = localKey;
+  const save = () =>
+    photoDraft("put", "-gallery", {
+      files: pending,
+      ids,
+      reason: reason.value,
+      kind: kind.value,
+    }).catch(() => {
+      status.textContent =
+        "사진·파일 초안을 보관하지 못했어요. 창을 닫기 전에 제출해주세요.";
+    });
+  const describe = () =>
+    (selected.textContent = pending.length
+      ? pending.map((f) => f?.name || "설명 글").join(" · ")
+      : "사진·PDF를 최대 5개 선택 · 파일당 원본 10MB 이하");
+  file.onchange = () => {
+    restored = true;
+    pending = [...file.files];
+    ids = pending.map(() => crypto.randomUUID());
+    if (pending.length > 5 || pending.some((f) => f.size > 10 * 1024 * 1024)) {
+      pending = [];
+      file.value = "";
+      status.textContent = "한 번에 최대 5개, 파일당 10MB 이하로 골라주세요.";
+    } else status.textContent = "선택한 자료를 올릴 준비가 됐어요.";
+    describe();
+    save();
+  };
+  reason.oninput = kind.onchange = () => {
+    restored = true;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(save, 250);
+  };
+  photoDraft("get", "-gallery")
+    .then((draft) => {
+      if (!draft || restored || key !== localKey) return;
+      pending = draft.files || [];
+      ids = draft.ids || pending.map(() => crypto.randomUUID());
+      reason.value = draft.reason || "";
+      kind.value = draft.kind || "스토리보드";
+      describe();
+      status.textContent = "작성하던 자료 초안을 복원했어요.";
+    })
+    .catch(() => {});
+  form.append(
+    label,
+    kind,
+    file,
+    selected,
+    reason,
+    submit,
+    status,
+    el(
+      "p",
+      "선택한 파일마다 게시물이 하나씩 올라가요. 얼굴 사진은 필요 없고 발표 공개는 기본으로 꺼져 있어요. PDF는 파일로 내려받아 볼 수 있어요.",
+      "privacy-note",
+    ),
+  );
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    if (room.ended) return notify("종료된 수업에는 자료를 올릴 수 없어요.");
+    if (!pending.length && !reason.value.trim())
+      return notify("파일 또는 설명을 입력해주세요.");
+    busy = true;
+    submit.disabled = true;
+    file.disabled = true;
+    kind.disabled = true;
+    reason.disabled = true;
+    clearTimeout(draftTimer);
+    let count = 0;
+    try {
+      if (!pending.length) {
+        pending = [null];
+        ids = [crypto.randomUUID()];
+      }
+      while (pending.length) {
+        const item = pending[0],
+          payload = {
+            reason: "[" + kind.value + "] " + reason.value,
+            words: [],
+            consent: false,
+            writeId: ids[0] || crypto.randomUUID(),
+          };
+        if (item) {
+          if (item.type === "application/pdf" || /\.pdf$/i.test(item.name)) {
+            payload.file = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () =>
+                resolve(
+                  "data:application/pdf;base64," + reader.result.split(",")[1],
+                );
+              reader.onerror = () => reject(Error("파일을 읽지 못했어요."));
+              reader.readAsDataURL(item);
+            });
+            payload.fileName = item.name;
+          } else payload.image = await prepareImage(item);
+        }
+        status.textContent = count + 1 + "번째 자료를 올리고 있어요…";
+        await api("board", "POST", payload);
+        pending.shift();
+        ids.shift();
+        count++;
+        await save();
+      }
+      file.value = "";
+      reason.value = "";
+      await photoDraft("delete", "-gallery");
+      describe();
+      status.textContent = count + "개 자료를 우리 조 게시판에 올렸어요.";
+      await loadGallery();
+    } catch (error) {
+      status.textContent =
+        (count ? count + "개는 올라갔어요. " : "") +
+        error.message +
+        " 남은 파일은 다시 시도할 수 있어요.";
+    } finally {
+      busy = false;
+      submit.disabled = !!room.ended;
+      file.disabled = false;
+      kind.disabled = false;
+      reason.disabled = false;
+    }
+  };
+  box.replaceChildren(form);
+}
+
 async function loadGallery() {
+  renderGalleryComposer();
+  if (document.activeElement?.matches("#gallery-posts textarea")) return;
   const list = $("#gallery-posts"),
     revision = ++galleryRequest;
   list.replaceChildren(el("p", "게시물을 불러오고 있어요.", "muted"));
@@ -1878,7 +2053,7 @@ async function loadGallery() {
     list.replaceChildren();
     if (!posts.length)
       list.append(el("p", "아직 올라온 자료가 없어요.", "muted"));
-    posts.forEach((p) => list.append(postCard(p, false, true)));
+    posts.forEach((p) => list.append(postCard(p, session?.role === "host")));
   } catch (e) {
     if (revision !== galleryRequest) return;
     list.replaceChildren(
@@ -1906,6 +2081,7 @@ async function loadBoard() {
   }
   try {
     boardPosts = (await api("board")).posts;
+    if ($("#board")?.classList.contains("active")) loadGallery();
     if (currentTab === "style") renderBoard();
     if (currentTab === "summary")
       $("#summary-content").replaceChildren(
@@ -2064,7 +2240,7 @@ function renderBoard() {
         report(e);
       } finally {
         uploadBusy = false;
-        upload.disabled = !room.boardOpen || room.ended;
+        upload.disabled = room.ended;
       }
     };
     box.append(
@@ -2074,7 +2250,7 @@ function renderBoard() {
     );
     box.querySelector(".post-list").id = "post-list";
   }
-  $("#upload-style").disabled = !room.boardOpen || room.ended || uploadBusy;
+  $("#upload-style").disabled = room.ended || uploadBusy;
   let status = $("#board-open-status");
   if (!status) {
     status = el("p", undefined, "board-open-status");
@@ -2083,8 +2259,8 @@ function renderBoard() {
   }
   status.textContent =
     room.boardOpen && !room.ended
-      ? "공유 활동이 열려 있어요."
-      : "강사가 공유 활동을 열면 업로드와 의견 쓰기가 가능해요.";
+      ? "수업 참여 후 언제든 자료와 의견을 올릴 수 있어요."
+      : "종료된 수업은 자료와 의견을 읽을 수 있어요.";
   const list = $("#post-list");
   if (document.activeElement?.closest("#post-list")) return;
   list.replaceChildren();
@@ -2104,6 +2280,12 @@ function postCard(p, host, readOnly = false) {
       "eyebrow",
     ),
   );
+  if (p.file) {
+    const link = el("a", "PDF 내려받기 · " + p.file.name, "outline-button");
+    link.href = apiBase() + "/board/" + p.id + "/file";
+    link.setAttribute("download", p.file.name);
+    card.append(link);
+  }
   if (p.image) {
     const img = el("img");
     img.loading = "lazy";
@@ -2166,11 +2348,19 @@ function postCard(p, host, readOnly = false) {
     input.rows = 2;
     input.maxLength = 500;
     input.setAttribute("aria-label", p.name + " 게시물에 의견 남기기");
-    input.placeholder =
-      "“이 조합의 ___한 느낌이 좋아요.” “___색을 더해보면 어떨까요?”";
+    const commentKey = localKey + "-comment-" + p.id;
+    try {
+      input.value = localStorage.getItem(commentKey) || "";
+    } catch {}
+    input.oninput = () => {
+      try {
+        localStorage.setItem(commentKey, input.value);
+      } catch {}
+    };
+    input.placeholder = "좋았던 점이나 궁금한 점을 남겨주세요.";
     const submit = el("button", "의견 남기기", "outline-button");
     submit.type = "submit";
-    submit.disabled = !room.boardOpen || room.ended;
+    submit.disabled = room.ended;
     form.append(input, submit);
     form.onsubmit = async (e) => {
       e.preventDefault();
@@ -2178,12 +2368,15 @@ function postCard(p, host, readOnly = false) {
       try {
         await api("board/" + p.id + "/comments", "POST", { text: input.value });
         input.value = "";
+        try {
+          localStorage.removeItem(commentKey);
+        } catch {}
         document.activeElement.blur();
         await loadBoard();
       } catch (e) {
         report(e);
       } finally {
-        submit.disabled = !room.boardOpen || room.ended;
+        submit.disabled = room.ended;
       }
     };
     card.append(form);
@@ -2526,6 +2719,7 @@ function renderTeacherLive() {
   $("#active-toggle").textContent = room.active
     ? "활동·타이머 일시정지"
     : "활동·타이머 시작";
+  $("#board-toggle").hidden = true;
   $("#board-toggle").textContent = room.boardOpen
     ? "자료 공유 닫기"
     : "자료 공유 열기";

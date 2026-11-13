@@ -88,6 +88,7 @@ export function buildReportData(raw) {
       reason: t(p.reason),
       words: (p.words || []).map(t),
       hasImage: !!p.image,
+      attachmentName: t(p.file?.name),
       feedback: (p.comments || []).map((c) => t(c.text)),
     }));
   return {
@@ -527,6 +528,12 @@ export async function createReport(raw, assets) {
       });
       y -= size.height + 30;
     }
+    if (post.attachmentName)
+      paragraph(
+        "공유한 PDF 파일",
+        post.attachmentName +
+          " · 원본은 게시판에서 별도로 내려받아 보관하세요.",
+      );
     paragraph(
       post.reason.startsWith("[두 펠트지 비교]")
         ? "사진과 함께 남긴 관찰"
